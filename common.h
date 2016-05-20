@@ -1,0 +1,11 @@
+//
+// Created by 孙万捷 on 16/5/19.
+//
+
+#ifndef SUNVOLUMERENDER_COMMON_H
+#define SUNVOLUMERENDER_COMMON_H
+
+#define WIDTH 640
+#define HEIGHT 640
+
+#endif //SUNVOLUMERENDER_COMMON_H
