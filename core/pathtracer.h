@@ -12,8 +12,11 @@
 #include "core/cuda_bbox.h"
 #include "core/cuda_transfer_function.h"
 
-extern "C" void rendering(glm::u8vec4* img, const cudaBBox& volumeBox, const cudaCamera& camera, unsigned int frameNo);
+// kernel
+extern "C" void rendering(glm::u8vec4* img, const cudaCamera& camera, unsigned int frameNo);
 
+// setup functions
+extern "C" void setup_volume(const cudaVolume& vol);
 extern "C" void setup_transferfunction(const cudaTransferFunction& tf);
 
 #endif //SUNVOLUMERENDER_PATHTRACER_H

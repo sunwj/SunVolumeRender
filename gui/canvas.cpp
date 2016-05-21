@@ -6,9 +6,11 @@
 
 Canvas::Canvas(const QGLFormat &format, QWidget *parent) : QGLWidget(format, parent)
 {
-    eyeDist = 6.f;
-    volumeBox.Set(glm::vec3(-1), glm::vec3(1));
-    camera.Setup(glm::vec3(0.f, 0.f, eyeDist), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f), 45.f, WIDTH, HEIGHT);
+    volumeReader.Read("test.mhd", "../");
+    volumeReader.CreateDeviceVolume(&deviceVolume);
+    setup_volume(deviceVolume);
+    ZoomToExtent();
+    camera.Setup(glm::vec3(0.f, 0.f, eyeDist), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f), fov, WIDTH, HEIGHT);
     viewMat = glm::lookAt(glm::vec3(0.f, 0.f, eyeDist), glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f));
 }
 
@@ -45,7 +47,7 @@ void Canvas::paintGL()
     checkCudaErrors(cudaGraphicsMapResources(1, &resource, 0));
     checkCudaErrors(cudaGraphicsResourceGetMappedPointer((void**)&img, &size, resource));
 
-    rendering(img, volumeBox, camera, 0);
+    rendering(img, camera, 0);
     checkCudaErrors(cudaDeviceSynchronize());
 
     checkCudaErrors(cudaGraphicsUnmapResources(1, &resource, 0));
@@ -118,4 +120,12 @@ void Canvas::UpdateCamera()
     auto w = glm::vec3(viewMat[2][0], viewMat[2][1], viewMat[2][2]);
     auto pos = w * eyeDist - u * cameraTranslate.x - v * cameraTranslate.y;
     camera.Setup(pos, u, v, w, 45.f, WIDTH, HEIGHT);
+}
+
+void Canvas::ZoomToExtent()
+{
+    glm::vec3 extent = volumeReader.GetVolumeSize();
+    auto maxSpan = fmaxf(extent.x, fmaxf(extent.y, extent.z));
+    maxSpan *= 1.5f;       // enlarge it slightly
+    eyeDist = maxSpan / (2 * tan(glm::radians(fov * 0.5f)));
 }

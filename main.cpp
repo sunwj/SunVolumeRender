@@ -1,7 +1,8 @@
 #include "gui/mainwindow.h"
 #include <QApplication>
 #include <qtextstream.h>
-#include <qfile.h>
+
+#include "core/VolumeReader.h"
 
 void chooseBestDevice()
 {

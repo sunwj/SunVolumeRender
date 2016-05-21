@@ -39,7 +39,8 @@ include_directories(${GLM_INCLUDE_DIRS})
 set(HOST_SOURCES main.cpp
         gui/mainwindow.cpp
         gui/canvas.cpp
-        gui/transferfunction.cpp)
+        gui/transferfunction.cpp
+        core/VolumeReader.cpp)
 
 set(DEVICE_SOURCES pathtracer.cu)
 

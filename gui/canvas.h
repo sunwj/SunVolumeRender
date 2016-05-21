@@ -15,10 +15,13 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "core/VolumeReader.h"
+
 #include "common.h"
 #include "utils/helper_cuda.h"
 #include "core/pathtracer.h"
 #include "core/cuda_transfer_function.h"
+#include "core/cuda_volume.h"
 
 class Canvas : public QGLWidget
 {
@@ -38,6 +41,7 @@ protected:
     void initializeGL();
     void resizeGL(int w, int h);
     void paintGL();
+
     //mouse
     QPointF PixelPosToViewPos(const QPointF& pt)
     {
@@ -49,6 +53,9 @@ protected:
     void mouseMoveEvent(QMouseEvent* e);
     void wheelEvent(QWheelEvent* e);
 
+    //others
+    void ZoomToExtent();
+
 private:
     void UpdateCamera();
 
@@ -57,12 +64,15 @@ private:
     cudaGraphicsResource* resource;
     glm::u8vec4* img;
     QPointF mouseStartPoint;
-    float eyeDist;
+    float fov = 45.f;
+    float eyeDist = 0.f;
     glm::vec2 cameraTranslate = glm::vec2(0.f);
     glm::mat4 viewMat = glm::mat4(1.f);
 
-    cudaBBox volumeBox;
+    VolumeReader volumeReader;
+
     cudaCamera camera;
+    cudaVolume deviceVolume;
     cudaTransferFunction transferFunction;
 };
 

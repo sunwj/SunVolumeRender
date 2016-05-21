@@ -15,7 +15,8 @@
 class cudaBBox
 {
 public:
-    __host__ cudaBBox() {}
+    __host__ __device__ cudaBBox() {}
+
     __host__ cudaBBox(const glm::vec3& vmin, const glm::vec3& vmax)
     {
         Set(vmin, vmax);
@@ -48,9 +49,9 @@ public:
     }
 
 public:
-    glm::vec3 vmin = glm::vec3(glm::uninitialize);
-    glm::vec3 vmax = glm::vec3(glm::uninitialize);
-    glm::vec3 invSize = glm::vec3(glm::uninitialize);
+    glm::vec3 vmin;
+    glm::vec3 vmax;
+    glm::vec3 invSize;
 };
 
 #endif //SUNVOLUMERENDER_CUDA_BBOX_H

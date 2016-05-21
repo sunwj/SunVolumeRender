@@ -10,22 +10,30 @@
 #define GLM_FORCE_INLINE
 #include <glm/glm.hpp>
 
-#include "core/cuda_bbox.h"
+#include "cuda_bbox.h"
 
 class cudaVolume
 {
 public:
-    __device__ float operator ()(const glm::vec3& pointInWorld)
+    __host__ __device__ void Set(const cudaBBox& bbox, const glm::vec3& spacing, const cudaTextureObject_t& tex)
+    {
+        this->bbox = bbox;
+        this->spacing = spacing;
+        this->invSpacing = 1.f / spacing;
+        this->tex = tex;
+    }
+
+    __device__ float operator ()(const glm::vec3& pointInWorld) const
     {
         return GetIntensity(pointInWorld);
     }
 
-    __device__ float operator ()(const glm::vec3& normalizedTexCoord, bool dummy)
+    __device__ float operator ()(const glm::vec3& normalizedTexCoord, bool dummy) const
     {
         return GetIntensityNTC(normalizedTexCoord);
     }
 
-    __device__ bool Intersect(const cudaRay& ray, float* tNear, float* tFar)
+    __device__ bool Intersect(const cudaRay& ray, float* tNear, float* tFar) const
     {
         return bbox.Intersect(ray, tNear, tFar);
     }
@@ -60,7 +68,7 @@ private:
 #endif
     }
 
-    __device__ float GetIntensityNTC(const glm::vec3& normalizedTexCoord)
+    __device__ float GetIntensityNTC(const glm::vec3& normalizedTexCoord) const
     {
 #ifdef __CUDACC__
         return tex3D<float>(tex, normalizedTexCoord.x, normalizedTexCoord.y, normalizedTexCoord.z);
@@ -69,11 +77,11 @@ private:
 #endif
     }
 
-private:
+public:
     cudaBBox bbox;
-    cudaTextureObject_t tex = 0;
-    glm::vec3 spacing = glm::vec3(glm::uninitialize);
-    glm::vec3 invSpacing = glm::vec3(glm::uninitialize);
+    cudaTextureObject_t tex;
+    glm::vec3 spacing;
+    glm::vec3 invSpacing;
 };
 
 #endif //SUNVOLUMERENDER_VOLUME_H
