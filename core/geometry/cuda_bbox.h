@@ -10,7 +10,7 @@
 
 #include <cuda_runtime.h>
 
-#include "cuda_ray.h"
+#include "../cuda_ray.h"
 
 class cudaBBox
 {
@@ -45,7 +45,17 @@ public:
         *tNear = largest_tmin;
         *tFar = smallest_tmax;
 
-        return smallest_tmax > largest_tmin;
+        return (smallest_tmax > largest_tmin) && (*tNear > ray.tMin);
+    }
+
+    __device__ bool IsInside(const glm::vec3& ptInWorld) const
+    {
+        if(ptInWorld.x > vmax.x || ptInWorld.y > vmax.y || ptInWorld.z > vmax.z)
+            return false;
+        else if(ptInWorld.x < vmin.x || ptInWorld.y < vmin.y || ptInWorld.z < vmin.z)
+            return false;
+        else
+            return true;
     }
 
 public:

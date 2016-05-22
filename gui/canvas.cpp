@@ -6,17 +6,22 @@
 
 Canvas::Canvas(const QGLFormat &format, QWidget *parent) : QGLWidget(format, parent)
 {
-    volumeReader.Read("test.mhd", "../");
+    volumeReader.Read("../test.mhd");
     volumeReader.CreateDeviceVolume(&deviceVolume);
     setup_volume(deviceVolume);
+
     ZoomToExtent();
     camera.Setup(glm::vec3(0.f, 0.f, eyeDist), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f), fov, WIDTH, HEIGHT);
     viewMat = glm::lookAt(glm::vec3(0.f, 0.f, eyeDist), glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f));
+    UpdateCamera();
+
+    // render params
+    renderParams.SetupHDRBuffer(WIDTH, HEIGHT);
 }
 
 Canvas::~Canvas()
 {
-
+    renderParams.Clear();
 }
 
 void Canvas::initializeGL()
@@ -32,6 +37,8 @@ void Canvas::initializeGL()
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     
     checkCudaErrors(cudaGraphicsGLRegisterBuffer(&resource, pbo, cudaGraphicsMapFlagsNone));
+
+    this->startTimer(0);
 }
 
 void Canvas::resizeGL(int w, int h)
@@ -47,7 +54,7 @@ void Canvas::paintGL()
     checkCudaErrors(cudaGraphicsMapResources(1, &resource, 0));
     checkCudaErrors(cudaGraphicsResourceGetMappedPointer((void**)&img, &size, resource));
 
-    rendering(img, camera, 0);
+    rendering(img, renderParams);
     checkCudaErrors(cudaDeviceSynchronize());
 
     checkCudaErrors(cudaGraphicsUnmapResources(1, &resource, 0));
@@ -55,6 +62,8 @@ void Canvas::paintGL()
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
     glDrawPixels(WIDTH, HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+    renderParams.frameNo++;
 }
 
 void Canvas::mousePressEvent(QMouseEvent *e)
@@ -103,6 +112,7 @@ void Canvas::mouseMoveEvent(QMouseEvent *e)
 
     mouseStartPoint = PixelPosToViewPos(e->posF());
 
+    ReStartRender();
     e->ignore();
 }
 
@@ -110,6 +120,7 @@ void Canvas::mouseMoveEvent(QMouseEvent *e)
 void Canvas::wheelEvent(QWheelEvent *e)
 {
 
+    ReStartRender();
     e->accept();
 }
 
@@ -120,8 +131,11 @@ void Canvas::UpdateCamera()
     auto w = glm::vec3(viewMat[2][0], viewMat[2][1], viewMat[2][2]);
     auto pos = w * eyeDist - u * cameraTranslate.x - v * cameraTranslate.y;
     camera.Setup(pos, u, v, w, 45.f, WIDTH, HEIGHT);
+
+    setup_camera(camera);
 }
 
+//todo: need fix
 void Canvas::ZoomToExtent()
 {
     glm::vec3 extent = volumeReader.GetVolumeSize();

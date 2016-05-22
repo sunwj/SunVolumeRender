@@ -10,7 +10,7 @@
 #define GLM_FORCE_INLINE
 #include <glm/glm.hpp>
 
-#include "cuda_bbox.h"
+#include "geometry/cuda_bbox.h"
 
 class cudaVolume
 {
@@ -52,6 +52,11 @@ public:
         return glm::normalize(Gradient_CentralDiff(pointInWorld));
     }
 
+    __device__ bool IsInside(const glm::vec3& ptInWorld) const
+    {
+        return bbox.IsInside(ptInWorld);
+    }
+
 private:
     __device__ glm::vec3 GetNormalizedTexCoord(const glm::vec3& pointInWorld) const
     {
@@ -77,7 +82,7 @@ private:
 #endif
     }
 
-public:
+private:
     cudaBBox bbox;
     cudaTextureObject_t tex;
     glm::vec3 spacing;

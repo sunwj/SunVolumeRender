@@ -18,7 +18,7 @@ public:
         this->tex = tex;
     }
 
-    __device__ glm::vec4 operator ()(float intensity)
+    __device__ glm::vec4 operator ()(float intensity) const
     {
 #ifdef __CUDACC__
         auto val = tex1D<float4>(tex, intensity);
@@ -28,7 +28,7 @@ public:
 #endif
     }
 
-    __device__ glm::vec3 GetColor(float intensity)
+    __device__ glm::vec3 GetColor(float intensity) const
     {
 #ifdef __CUDACC__
         auto val = tex1D<float4>(tex, intensity);
@@ -38,7 +38,7 @@ public:
 #endif
     }
 
-    __device__ float GetOpacity(float intensity)
+    __device__ float GetOpacity(float intensity) const
     {
 #ifdef __CUDACC__
         auto val = tex1D<float4>(tex, intensity);

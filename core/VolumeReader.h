@@ -21,7 +21,7 @@
 class VolumeReader
 {
 public:
-    void Read(std::string filename, std::string path = "./");
+    void Read(std::string filename);
     void CreateDeviceVolume(cudaVolume* volume);
     glm::vec3 GetVolumeSize();
 

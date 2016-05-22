@@ -35,6 +35,7 @@ public:
     ~TransferFunction();
 
     cudaTextureObject_t GetCompositeTFTextureObject() {return compositeTex;}
+    float GetMaxOpacityValue() {return maxOpacity;}
     void SaveCurrentTFConfiguration();
     void LoadExistingTFConfiguration();
 
@@ -54,6 +55,7 @@ private:
     vtkSmartPointer<vtkPiecewiseFunction> opacityTF;
     vtkSmartPointer<vtkColorTransferFunction> colorTF;
 
+    float maxOpacity = std::numeric_limits<float>::min();
     float opacityTable[TABLE_SIZE];
     float colorTable[TABLE_SIZE * 3];
     float compositeTable[TABLE_SIZE * 4];

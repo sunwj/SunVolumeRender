@@ -8,13 +8,13 @@
 #define STB_IMAGE_WRITE_IMPLEMENTATION
 #include "utils/std_image_write.h"
 
-void VolumeReader::Read(std::string filename, std::string path)
+void VolumeReader::Read(std::string filename)
 {
     ClearHost();
 
     // image reader
     auto metaReader = vtkSmartPointer<vtkMetaImageReader>::New();
-    metaReader->SetFileName((path + filename).c_str());
+    metaReader->SetFileName(filename.c_str());
     metaReader->ReleaseDataFlagOn();
     metaReader->Update();
 
@@ -42,7 +42,7 @@ void VolumeReader::Read(std::string filename, std::string path)
     this->spacing = glm::vec3(dataSpacing[0], dataSpacing[1], dataSpacing[2]);
     this->dim = glm::ivec3(dataDim[1] + 1, dataDim[3] + 1, dataDim[5] + 1);
 
-    auto ptr = reinterpret_cast<unsigned short*>(data);
+    /*auto ptr = reinterpret_cast<unsigned short*>(data);
     unsigned char* tmp = new unsigned char[512 * 512 * 3];
     for(auto i = 0; i < 512; ++i)
     {
@@ -56,7 +56,7 @@ void VolumeReader::Read(std::string filename, std::string path)
     }
 
     stbi_write_bmp("test.bmp", 512, 512, 3, (char*)tmp);
-    delete []tmp;
+    delete []tmp;*/
 }
 
 void VolumeReader::ClearHost()
@@ -96,7 +96,7 @@ void VolumeReader::Rescale(T* dataPtr, size_t size)
     auto upBound = std::numeric_limits<T>::min();
     for(auto i = 0; i < size; ++i)
     {
-        upBound = std::max(upBound, dataPtr[i]);
+        upBound = std::max(upBound, ptr1[i]);
         lowBound = std::min(lowBound, ptr1[i]);
     }
     auto extent = upBound - lowBound;

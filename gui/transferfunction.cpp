@@ -22,6 +22,8 @@ TransferFunction::TransferFunction(vtkSmartPointer<vtkPiecewiseFunction> otf, vt
         compositeTable[j++] = colorTable[k++];
         compositeTable[j++] = colorTable[k++];
         compositeTable[j++] = colorTable[k++];
+
+        maxOpacity = fmaxf(maxOpacity, opacityTable[m]);
         compositeTable[j++] = opacityTable[m++];
     }
 
@@ -136,6 +138,7 @@ void TransferFunction::onOpacityTFChanged()
     size_t j = 3;
     for(size_t i = 0; i < TABLE_SIZE; ++i)
     {
+        maxOpacity = fmaxf(maxOpacity, opacityTable[i]);
         compositeTable[j] = opacityTable[i];
         j += 4;
     }

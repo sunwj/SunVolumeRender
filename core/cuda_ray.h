@@ -17,11 +17,11 @@ class cudaRay
 public:
     __device__ cudaRay()
     {
-        tMin = 1e-8;
-        tMax = FLT_MAX;
+        this->tMin = 1e-6;
+        this->tMax = FLT_MAX;
     }
 
-    __device__ cudaRay(const glm::vec3& orig, const glm::vec3& dir, float tMin = 1e-8, float tMax = FLT_MAX)
+    __device__ cudaRay(const glm::vec3& orig, const glm::vec3& dir, float tMin = 1e-6, float tMax = FLT_MAX)
     {
         this->orig = orig;
         this->dir = dir;

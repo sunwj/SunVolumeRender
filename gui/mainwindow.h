@@ -30,8 +30,7 @@ private:
 private slots:
     void onTransferFunctionChanged()
     {
-        //std::cerr<<"Transfer function changed!"<<std::endl;
-        canvas->SetTransferFunctionTexture(tf->GetCompositeTFTextureObject());
+        canvas->SetTransferFunction(tf->GetCompositeTFTextureObject(), tf->GetMaxOpacityValue());
     };
 
 private:

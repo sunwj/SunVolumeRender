@@ -15,6 +15,9 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ConfigureTransferFunction();
     ConfigureCanvas();
+
+    // initialize transferfunction on device
+    canvas->SetTransferFunction(this->tf->GetCompositeTFTextureObject(), this->tf->GetMaxOpacityValue());
 }
 
 MainWindow::~MainWindow()
