@@ -15,7 +15,7 @@
 #include "cuda_volume.h"
 #include "cuda_transfer_function.h"
 
-#define BASE_SAMPLE_STEP_SIZE 150.f
+#define BASE_SAMPLE_STEP_SIZE 1.f
 
 __inline__ __device__ float opacity_to_sigmat(float opacity)
 {
@@ -24,24 +24,32 @@ __inline__ __device__ float opacity_to_sigmat(float opacity)
 
 __inline__ __device__ float sample_distance(const cudaRay& ray, const cudaVolume& volume, const cudaTransferFunction& tf, float invSigmaMax, curandState& rng)
 {
-    float t = ray.tMin;
-    while(true)
+    float tNear, tFar;
+    if(volume.Intersect(ray, &tNear, &tFar))
     {
-        t += -logf(curand_uniform(&rng)) * invSigmaMax;
+        ray.tMin = tNear < 0.f ? 1e-6 : tNear;
+        ray.tMax = tFar;
+        auto t = ray.tMin;
 
-        auto ptInWorld = ray.PointOnRay(t);
-        if(!volume.IsInside(ptInWorld))
-            return -FLT_MAX;
+        while(true)
+        {
+            t += -logf(1.f - curand_uniform(&rng)) * invSigmaMax;
+            if(t > ray.tMax)
+                return -FLT_MAX;
 
-        auto intensity = volume(ptInWorld);
-        auto color_opacity = tf(intensity);
-        auto sigma_t = opacity_to_sigmat(color_opacity.w);
+            auto ptInWorld = ray.PointOnRay(t);
+            auto intensity = volume(ptInWorld);
+            auto color_opacity = tf(intensity);
+            auto sigma_t = opacity_to_sigmat(color_opacity.w);
 
-        if(curand_uniform(&rng) < sigma_t * invSigmaMax)
-            break;
+            if(curand_uniform(&rng) < sigma_t * invSigmaMax)
+                break;
+        }
+
+        return t;
     }
 
-    return t;
+    return -FLT_MAX;
 }
 
 #endif //SUNVOLUMERENDER_WOODCOCK_TRACKING_H

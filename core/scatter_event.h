@@ -17,6 +17,9 @@ public:
     glm::vec3 pointInWorld = glm::vec3(glm::uninitialize);
     glm::vec3 normalizedGradient = glm::vec3(glm::uninitialize);
     float gradientMagnitude = 0.f;
+    union{
+        float g = 0.f;
+    };
 };
 
 #endif //SUNVOLUMERENDER_SCATTER_EVENT_H

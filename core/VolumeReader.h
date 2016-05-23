@@ -7,9 +7,13 @@
 
 #include <vector>
 
+#include <QFileInfo>
+
 #include <vtkMetaImageReader.h>
 #include <vtkImageData.h>
+#include <vtkImageCast.h>
 #include <vtkSmartPointer.h>
+#include <vtkErrorCode.h>
 
 #include <glm/glm.hpp>
 
@@ -29,14 +33,13 @@ private:
     void ClearHost();
     void ClearDevice();
     template <typename T, typename UT>
-    void Rescale(T* dataPtr, size_t size);
+    void Rescale(T* dataPtr, size_t size, float dataMin, float dataMax);
     void CreateVolumeTexture();
 
 private:
     glm::vec3 spacing = glm::vec3(glm::uninitialize);
     glm::ivec3 dim = glm::ivec3(glm::uninitialize);
     char* data = nullptr;
-    int elementType;
 
     cudaArray* array = nullptr;
     cudaTextureObject_t tex = 0;

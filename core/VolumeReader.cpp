@@ -3,6 +3,7 @@
 //
 
 #include <driver_types.h>
+#include <vtkImageCast.h>
 #include "VolumeReader.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -12,51 +13,62 @@ void VolumeReader::Read(std::string filename)
 {
     ClearHost();
 
-    // image reader
-    auto metaReader = vtkSmartPointer<vtkMetaImageReader>::New();
-    metaReader->SetFileName(filename.c_str());
-    metaReader->ReleaseDataFlagOn();
-    metaReader->Update();
+    auto metaImageReader = vtkSmartPointer<vtkMetaImageReader>::New();
 
-    auto imageData = metaReader->GetOutput();
-    char* dataPtr = static_cast<char*>(imageData->GetScalarPointer());
-    auto dataSpacing = metaReader->GetDataSpacing();
-    auto dataDim = metaReader->GetDataExtent();     // data dimension structure [0, dimX - 1, 0, dimY - 1, 0, dimZ - 1]
-    elementType = metaReader->GetDataScalarType();
-
-    // rescale data
-    auto size = (dataDim[1] + 1) * (dataDim[3] + 1) * (dataDim[5] + 1);
-    switch(elementType)
+    QFileInfo fileInfo(filename.c_str());
+    if(!fileInfo.exists())
     {
-        case VTK_SHORT:
-            data = new char[size * 2];
-            Rescale<short, unsigned short>(reinterpret_cast<short*>(dataPtr), size);
-            break;
-
-        default:
-            std::cerr<<"Unsupported data element type! Read volume data failed!"<<std::endl;
-            exit(0);
-            break;
+        std::cerr<<filename<<" does not exist"<<std::endl;
+        exit(0);
     }
 
-    this->spacing = glm::vec3(dataSpacing[0], dataSpacing[1], dataSpacing[2]);
-    this->dim = glm::ivec3(dataDim[1] + 1, dataDim[3] + 1, dataDim[5] + 1);
-
-    /*auto ptr = reinterpret_cast<unsigned short*>(data);
-    unsigned char* tmp = new unsigned char[512 * 512 * 3];
-    for(auto i = 0; i < 512; ++i)
+    if(!metaImageReader->CanReadFile(filename.c_str()))
     {
-        for(auto j = 0; j < 512; ++j)
-        {
-            auto offset = i * 512 + j;
-            tmp[offset * 3] = ptr[offset] / 65535.f * 255;
-            tmp[offset * 3 + 1] = tmp[offset * 3];
-            tmp[offset * 3 + 2] = tmp[offset * 3];
-        }
+        std::cerr<<"meta image reader cannot read "<<filename<<std::endl;
+        exit(0);
+    }
+    metaImageReader->SetFileName(filename.c_str());
+    metaImageReader->Update();
+
+    if(metaImageReader->GetErrorCode() != vtkErrorCode::NoError)
+    {
+        std::cerr<<"Error loading file "<<vtkErrorCode::GetStringFromErrorCode(metaImageReader->GetErrorCode())<<std::endl;
+        exit(0);
     }
 
-    stbi_write_bmp("test.bmp", 512, 512, 3, (char*)tmp);
-    delete []tmp;*/
+    auto imageCast = vtkSmartPointer<vtkImageCast>::New();
+    imageCast->SetInput(metaImageReader->GetOutput());
+    imageCast->SetOutputScalarTypeToShort();
+    imageCast->Update();
+
+    auto imageData = imageCast->GetOutput();
+
+    auto dataExtent = imageData->GetExtent();
+    this->dim = glm::ivec3(dataExtent[1] + 1, dataExtent[3] + 1, dataExtent[5] + 1);
+
+    auto dataSpacing = imageData->GetSpacing();
+    this->spacing = glm::vec3(static_cast<float>(dataSpacing[0]), static_cast<float>(dataSpacing[1]), static_cast<float>(dataSpacing[2]));
+
+    auto noEles = dim.x * dim.y * dim.z;
+    data = new char[noEles * 2];
+    auto dataRange = imageData->GetScalarRange();
+    Rescale<short, unsigned short>(reinterpret_cast<short*>(imageData->GetScalarPointer()), noEles, dataRange[0], dataRange[1]);
+
+    //auto ptr = reinterpret_cast<unsigned short*>(data) + 60 * 512 * 512;
+    //unsigned char* tmp = new unsigned char[512 * 512 * 3];
+    //for(auto i = 0; i < 512; ++i)
+    //{
+    //    for(auto j = 0; j < 512; ++j)
+    //    {
+    //        auto offset = i * 512 + j;
+    //        tmp[offset * 3] = ptr[offset] / 65535.f * 255;
+    //        tmp[offset * 3 + 1] = tmp[offset * 3];
+    //        tmp[offset * 3 + 2] = tmp[offset * 3];
+    //    }
+    //}
+//
+    //stbi_write_bmp("test.bmp", 512, 512, 3, (char*)tmp);
+    //delete []tmp;
 }
 
 void VolumeReader::ClearHost()
@@ -87,25 +99,17 @@ void VolumeReader::ClearDevice()
 }
 
 template <typename T, typename UT>
-void VolumeReader::Rescale(T* dataPtr, size_t size)
+void VolumeReader::Rescale(T* dataPtr, size_t size, float dataMin, float dataMax)
 {
     auto ptr1 = dataPtr;
     auto ptr2 = reinterpret_cast<UT*>(data);
 
-    auto lowBound = std::numeric_limits<T>::max();
-    auto upBound = std::numeric_limits<T>::min();
-    for(auto i = 0; i < size; ++i)
-    {
-        upBound = std::max(upBound, ptr1[i]);
-        lowBound = std::min(lowBound, ptr1[i]);
-    }
-    auto extent = upBound - lowBound;
-
+    auto extent = dataMax - dataMin;
     auto dataTypeExtent = std::numeric_limits<UT>::max() - std::numeric_limits<UT>::min();
     // rescale data to unsigned data type
     for(auto i = 0; i < size; ++i)
     {
-        ptr2[i] = (ptr1[i] - lowBound) / (float)extent * dataTypeExtent;
+        ptr2[i] = (ptr1[i] - dataMin) / extent * dataTypeExtent;
     }
 }
 
@@ -113,17 +117,7 @@ void VolumeReader::CreateVolumeTexture()
 {
     ClearDevice();
 
-    int bytesPerElement = 0;
-    switch(elementType)
-    {
-        case VTK_SHORT:
-            bytesPerElement = 2;
-            break;
-        default:
-            std::cout<<"Unsupported data element type! Create device volume failed!"<<std::endl;
-            exit(0);
-            break;
-    }
+    int bytesPerElement = 2;
     // allocate cudaArray
     cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc(bytesPerElement * 8, 0, 0, 0, cudaChannelFormatKindUnsigned);
     cudaExtent extent = make_cudaExtent(dim.x, dim.y, dim.z);

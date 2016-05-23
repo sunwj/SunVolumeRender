@@ -68,6 +68,15 @@ __global__ void clear_hdr_buffer(T* buffer)
     buffer[offset] = T(0.f);
 }
 
+__inline__ __device__ bool terminate_with_raussian_roulette(glm::vec3* troughput, curandState& rng)
+{
+    float illum = 0.2126f * troughput->x + 0.7152f * troughput->y + 0.0722 * troughput->z;
+    if(curand_uniform(&rng) > illum) return true;
+    *troughput /= illum;
+
+    return false;
+}
+
 __global__ void render_kernel(const RenderParams renderParams, uint32_t hashedFrameNo)
 {
     auto idx = blockDim.x * blockIdx.x + threadIdx.x;
@@ -82,16 +91,7 @@ __global__ void render_kernel(const RenderParams renderParams, uint32_t hashedFr
     cudaRay ray;
     camera.GenerateRay(idx, idy, rng, &ray);
 
-    float tNear, tFar;
-    if(!volume.Intersect(ray, &tNear, &tFar))
-    {
-        running_estimate(renderParams.hdrBuffer[offset], L, renderParams.frameNo);
-        return;
-    }
-
-    ray.tMin = tNear;
-    ray.tMax = tFar;
-    auto invSigmaMax = opacity_to_sigmat(renderParams.maxOpacity);
+    auto invSigmaMax = 1.f / opacity_to_sigmat(renderParams.maxOpacity);
     for(auto k = 0; k < renderParams.traceDepth; ++k)
     {
         auto t = sample_distance(ray, volume, transferFunction, invSigmaMax, rng);
@@ -104,15 +104,23 @@ __global__ void render_kernel(const RenderParams renderParams, uint32_t hashedFr
         auto intensity = volume(ptInWorld);
         auto color_opacity = transferFunction(intensity);
         auto albedo = glm::vec3(color_opacity.x, color_opacity.y, color_opacity.z);
-        auto opacity = color_opacity.w;
 
-        cudaRay shadowRay(ptInWorld, glm::normalize(glm::vec3(1.f)));
-        volume.Intersect(shadowRay, &tNear, &tFar);
-        shadowRay.tMax = tFar;
-        auto transmittion = transmittance(shadowRay, volume, transferFunction, invSigmaMax, rng);
+        auto Tl = transmittance(ptInWorld, ptInWorld + glm::vec3(1.f), volume, transferFunction, invSigmaMax, rng);
+
+        L += T * Tl * albedo * hg_phase_f(-ray.dir, glm::normalize(glm::vec3(1.f)), 0.f);
+
+        glm::vec3 newDir;
+        hg_phase_sample_f(0.f, -ray.dir, &newDir, nullptr, rng);
+        ray.orig = ptInWorld;
+        ray.dir = newDir;
 
         T *= albedo;
-        L += transmittion * T * hg_phase_evaluate(shadowRay.dir, -ray.dir, 0.f) * 5.f;
+
+        if(k >= 3)
+        {
+            if(terminate_with_raussian_roulette(&T, rng))
+                break;
+        }
     }
 
     running_estimate(renderParams.hdrBuffer[offset], L, renderParams.frameNo);

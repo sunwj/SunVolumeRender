@@ -45,7 +45,7 @@ public:
         *tNear = largest_tmin;
         *tFar = smallest_tmax;
 
-        return (smallest_tmax > largest_tmin) && (*tNear > ray.tMin);
+        return smallest_tmax > largest_tmin;
     }
 
     __device__ bool IsInside(const glm::vec3& ptInWorld) const
