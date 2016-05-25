@@ -4,6 +4,7 @@
 
 #include <driver_types.h>
 #include <vtkImageCast.h>
+#include <vtkImageGradientMagnitude.h>
 #include "VolumeReader.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -40,8 +41,15 @@ void VolumeReader::Read(std::string filename)
     imageCast->SetInput(metaImageReader->GetOutput());
     imageCast->SetOutputScalarTypeToShort();
     imageCast->Update();
-
     auto imageData = imageCast->GetOutput();
+
+    //auto imageGradientMagnitude = vtkSmartPointer<vtkImageGradientMagnitude>::New();
+    //imageGradientMagnitude->SetDimensionality(3);
+    //imageGradientMagnitude->SetInput(imageCast->GetOutput());
+    //imageGradientMagnitude->Update();
+    //auto magData = imageGradientMagnitude->GetOutput();
+    //auto magRange = magData->GetScalarRange();
+    //maxMagnitude = magRange[2];
 
     auto dataExtent = imageData->GetExtent();
     this->dim = glm::ivec3(dataExtent[1] + 1, dataExtent[3] + 1, dataExtent[5] + 1);
@@ -50,7 +58,7 @@ void VolumeReader::Read(std::string filename)
     this->spacing = glm::vec3(static_cast<float>(dataSpacing[0]), static_cast<float>(dataSpacing[1]), static_cast<float>(dataSpacing[2]));
 
     auto noEles = dim.x * dim.y * dim.z;
-    data = new char[noEles * 2];
+    volumeData = new char[noEles * 2];
     auto dataRange = imageData->GetScalarRange();
     Rescale<short, unsigned short>(reinterpret_cast<short*>(imageData->GetScalarPointer()), noEles, dataRange[0], dataRange[1]);
 
@@ -73,10 +81,10 @@ void VolumeReader::Read(std::string filename)
 
 void VolumeReader::ClearHost()
 {
-    if(data != nullptr)
+    if(volumeData != nullptr)
     {
-        delete data;
-        data = nullptr;
+        delete volumeData;
+        volumeData = nullptr;
     }
 
     spacing = glm::vec3(0.f);
@@ -85,16 +93,16 @@ void VolumeReader::ClearHost()
 
 void VolumeReader::ClearDevice()
 {
-    if(array != nullptr)
+    if(volumeArray != nullptr)
     {
-        checkCudaErrors(cudaFreeArray(array));
-        array = nullptr;
+        checkCudaErrors(cudaFreeArray(volumeArray));
+        volumeArray = nullptr;
     }
 
-    if(tex != 0)
+    if(volumeTex != 0)
     {
-        checkCudaErrors(cudaDestroyTextureObject(tex));
-        tex = 0;
+        checkCudaErrors(cudaDestroyTextureObject(volumeTex));
+        volumeTex = 0;
     }
 }
 
@@ -102,7 +110,7 @@ template <typename T, typename UT>
 void VolumeReader::Rescale(T* dataPtr, size_t size, float dataMin, float dataMax)
 {
     auto ptr1 = dataPtr;
-    auto ptr2 = reinterpret_cast<UT*>(data);
+    auto ptr2 = reinterpret_cast<UT*>(volumeData);
 
     auto extent = dataMax - dataMin;
     auto dataTypeExtent = std::numeric_limits<UT>::max() - std::numeric_limits<UT>::min();
@@ -113,7 +121,7 @@ void VolumeReader::Rescale(T* dataPtr, size_t size, float dataMin, float dataMax
     }
 }
 
-void VolumeReader::CreateVolumeTexture()
+void VolumeReader::CreateTextures()
 {
     ClearDevice();
 
@@ -121,21 +129,21 @@ void VolumeReader::CreateVolumeTexture()
     // allocate cudaArray
     cudaChannelFormatDesc channelDesc = cudaCreateChannelDesc(bytesPerElement * 8, 0, 0, 0, cudaChannelFormatKindUnsigned);
     cudaExtent extent = make_cudaExtent(dim.x, dim.y, dim.z);
-    checkCudaErrors(cudaMalloc3DArray(&array, &channelDesc, extent, cudaArrayDefault));
+    checkCudaErrors(cudaMalloc3DArray(&volumeArray, &channelDesc, extent, cudaArrayDefault));
 
     cudaMemcpy3DParms cpyParams;
     memset(&cpyParams, 0, sizeof(cudaMemcpy3DParms));
-    cpyParams.dstArray = array;
+    cpyParams.dstArray = volumeArray;
     cpyParams.extent = extent;
     cpyParams.kind = cudaMemcpyHostToDevice;
-    cpyParams.srcPtr = make_cudaPitchedPtr(data, dim.x * sizeof(char) * bytesPerElement, dim.x, dim.y);
+    cpyParams.srcPtr = make_cudaPitchedPtr(volumeData, dim.x * sizeof(char) * bytesPerElement, dim.x, dim.y);
     checkCudaErrors(cudaMemcpy3D(&cpyParams));
 
     // create texture
     cudaResourceDesc resDesc;
     memset(&resDesc, 0, sizeof(cudaResourceDesc));
     resDesc.resType = cudaResourceTypeArray;
-    resDesc.res.array.array = array;
+    resDesc.res.array.array = volumeArray;
 
     cudaTextureDesc texDesc;
     memset(&texDesc, 0, sizeof(cudaTextureDesc));
@@ -146,19 +154,19 @@ void VolumeReader::CreateVolumeTexture()
     texDesc.readMode = cudaReadModeNormalizedFloat;
     texDesc.normalizedCoords = 1;
 
-    checkCudaErrors(cudaCreateTextureObject(&tex, &resDesc, &texDesc, NULL));
+    checkCudaErrors(cudaCreateTextureObject(&volumeTex, &resDesc, &texDesc, NULL));
 }
 
 void VolumeReader::CreateDeviceVolume(cudaVolume* volume)
 {
-    CreateVolumeTexture();
+    CreateTextures();
 
     glm::vec3 volumeExtent = GetVolumeSize();
     auto vmax = volumeExtent - volumeExtent * 0.5f;
     auto vmin = -vmax;
     cudaBBox bbox = cudaBBox(vmin, vmax);
 
-    volume->Set(bbox, spacing, tex);
+    volume->Set(bbox, spacing, volumeTex);
 }
 
 glm::vec3 VolumeReader::GetVolumeSize()

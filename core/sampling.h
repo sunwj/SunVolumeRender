@@ -11,7 +11,7 @@
 #define GLM_FORCE_INLINE
 #include <glm/glm.hpp>
 
-#include "core/cuda_onb.h"
+#include "cuda_onb.h"
 
 // return r and theta in polar coordinate
 __inline__ __device__ glm::vec2 uniform_sample_unit_disk(curandState& rng)

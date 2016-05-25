@@ -5,6 +5,8 @@
 #define GLM_FORCE_NO_CTOR_INIT
 #include <stdio.h>
 
+#include <glm/glm.hpp>
+
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 #include <curand_kernel.h>
@@ -18,6 +20,8 @@
 #include "core/woodcock_tracking.h"
 #include "core/transmittance.h"
 #include "core/bsdf/henyey_greenstein.h"
+#include "core/bsdf/phong.h"
+#include "core/bsdf/fresnel.h"
 #include "common.h"
 
 // global variables
@@ -97,24 +101,64 @@ __global__ void render_kernel(const RenderParams renderParams, uint32_t hashedFr
         auto t = sample_distance(ray, volume, transferFunction, invSigmaMax, rng);
         if(t < 0.f)
         {
+            L += T * glm::vec3(0.03f);
             break;
         }
 
         auto ptInWorld = ray.PointOnRay(t);
         auto intensity = volume(ptInWorld);
+        auto gradient = volume.Gradient_CentralDiff(ptInWorld);
+        auto gradientMagnitude = sqrtf(glm::dot(gradient, gradient));
         auto color_opacity = transferFunction(intensity);
         auto albedo = glm::vec3(color_opacity.x, color_opacity.y, color_opacity.z);
+        auto opacity = color_opacity.w;
 
-        auto Tl = transmittance(ptInWorld, ptInWorld + glm::vec3(1.f), volume, transferFunction, invSigmaMax, rng);
+        auto wi = glm::normalize(glm::vec3(1.f, 0.f, -1.f));
+        auto Tl = transmittance(ptInWorld, ptInWorld + wi, volume, transferFunction, invSigmaMax, rng);
 
-        L += T * Tl * albedo * hg_phase_f(-ray.dir, glm::normalize(glm::vec3(1.f)), 0.f);
+        if(gradientMagnitude < 1e-3)
+        {
+            L += T * Tl * albedo * hg_phase_f(-ray.dir, wi, 0.f);
 
-        glm::vec3 newDir;
-        hg_phase_sample_f(0.f, -ray.dir, &newDir, nullptr, rng);
-        ray.orig = ptInWorld;
-        ray.dir = newDir;
+            glm::vec3 newDir;
+            hg_phase_sample_f(0.f, -ray.dir, &newDir, nullptr, rng);
+            ray.orig = ptInWorld;
+            ray.dir = newDir;
 
-        T *= albedo;
+            T *= albedo;
+        }
+        else
+        {
+            auto normal = glm::normalize(gradient);
+            if(glm::dot(normal, ray.dir) > 0.f)
+                normal = -normal;
+
+            float ks = schlick_fresnel(1.0f, 1.5f, glm::dot(-ray.dir, normal));
+            float kd = 1.f - ks;
+
+            auto diffuse = albedo * (float)M_1_PI * 0.5f;
+            auto specular = glm::vec3(1.f) * phong_brdf_f(-ray.dir, wi, normal, 10.f);
+
+            auto cosTerm = fmaxf(0.f, glm::dot(normal, wi));
+            L += T * Tl * (kd * diffuse + ks * specular) * cosTerm;
+
+            auto p = 0.25f + 0.5f * ks;
+            if(curand_uniform(&rng) < p)
+            {
+                ray.orig = ptInWorld;
+                ray.dir = sample_phong(rng, 10.f, glm::reflect(ray.dir, normal));
+
+                T *= ks / p;
+            }
+            else
+            {
+                ray.orig = ptInWorld;
+                ray.dir = cosine_weightd_sample_hemisphere(rng, normal);
+
+                T *= albedo;
+                T *= kd / (1.f - p);
+            }
+        }
 
         if(k >= 3)
         {

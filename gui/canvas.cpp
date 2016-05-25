@@ -6,7 +6,7 @@
 
 Canvas::Canvas(const QGLFormat &format, QWidget *parent) : QGLWidget(format, parent)
 {
-    volumeReader.Read("../zx.mha");
+    volumeReader.Read("../manix_small.mhd");
     volumeReader.CreateDeviceVolume(&deviceVolume);
     setup_volume(deviceVolume);
 
@@ -18,7 +18,7 @@ Canvas::Canvas(const QGLFormat &format, QWidget *parent) : QGLWidget(format, par
     // render params
     renderParams.SetupHDRBuffer(WIDTH, HEIGHT);
     renderParams.exposure = 3.f;
-    renderParams.traceDepth = 2.f;
+    renderParams.traceDepth = 5;
 }
 
 Canvas::~Canvas()

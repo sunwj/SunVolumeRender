@@ -12,6 +12,7 @@
 #include <vtkMetaImageReader.h>
 #include <vtkImageData.h>
 #include <vtkImageCast.h>
+#include <vtkImageMagnitude.h>
 #include <vtkSmartPointer.h>
 #include <vtkErrorCode.h>
 
@@ -34,15 +35,15 @@ private:
     void ClearDevice();
     template <typename T, typename UT>
     void Rescale(T* dataPtr, size_t size, float dataMin, float dataMax);
-    void CreateVolumeTexture();
+    void CreateTextures();
 
 private:
     glm::vec3 spacing = glm::vec3(glm::uninitialize);
     glm::ivec3 dim = glm::ivec3(glm::uninitialize);
-    char* data = nullptr;
+    char* volumeData = nullptr;
 
-    cudaArray* array = nullptr;
-    cudaTextureObject_t tex = 0;
+    cudaArray* volumeArray = nullptr;
+    cudaTextureObject_t volumeTex = 0;
 };
 
 
