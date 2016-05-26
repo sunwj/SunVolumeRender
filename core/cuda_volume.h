@@ -44,7 +44,7 @@ public:
         auto ydiff = GetIntensity(pointInWorld + glm::vec3(0.f, spacing.y, 0.f)) - GetIntensity(pointInWorld - glm::vec3(0.f, spacing.y, 0.f));
         auto zdiff = GetIntensity(pointInWorld + glm::vec3(0.f, 0.f, spacing.z)) - GetIntensity(pointInWorld - glm::vec3(0.f, 0.f, spacing.z));
 
-        return glm::vec3(xdiff, ydiff, zdiff);
+        return glm::vec3(xdiff, ydiff, zdiff) * 0.5f * invSpacing;
     }
 
     __device__ glm::vec3 NormalizedGradient(const glm::vec3& pointInWorld) const
@@ -55,6 +55,11 @@ public:
     __device__ bool IsInside(const glm::vec3& ptInWorld) const
     {
         return bbox.IsInside(ptInWorld);
+    }
+
+    __host__ __device__ glm::vec3 GetSize() const
+    {
+        return 1.f / bbox.invSize;
     }
 
 private:

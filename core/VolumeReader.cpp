@@ -43,14 +43,6 @@ void VolumeReader::Read(std::string filename)
     imageCast->Update();
     auto imageData = imageCast->GetOutput();
 
-    //auto imageGradientMagnitude = vtkSmartPointer<vtkImageGradientMagnitude>::New();
-    //imageGradientMagnitude->SetDimensionality(3);
-    //imageGradientMagnitude->SetInput(imageCast->GetOutput());
-    //imageGradientMagnitude->Update();
-    //auto magData = imageGradientMagnitude->GetOutput();
-    //auto magRange = magData->GetScalarRange();
-    //maxMagnitude = magRange[2];
-
     auto dataExtent = imageData->GetExtent();
     this->dim = glm::ivec3(dataExtent[1] + 1, dataExtent[3] + 1, dataExtent[5] + 1);
 
@@ -61,6 +53,27 @@ void VolumeReader::Read(std::string filename)
     volumeData = new char[noEles * 2];
     auto dataRange = imageData->GetScalarRange();
     Rescale<short, unsigned short>(reinterpret_cast<short*>(imageData->GetScalarPointer()), noEles, dataRange[0], dataRange[1]);
+
+    auto hist = vtkSmartPointer<vtkImageAccumulate>::New();
+    hist->SetInputConnection(imageCast->GetOutputPort());
+    hist->SetComponentExtent(0, dataRange[1] - dataRange[0] - 1, 0, 0, 0, 0);
+    hist->SetComponentOrigin(dataRange[0], 0, 0);
+    hist->SetComponentSpacing(1, 0, 0);
+    hist->IgnoreZeroOn();
+    hist->Update();
+
+    auto histDims = hist->GetOutput()->GetDimensions();
+    histogram.clear();
+    histogram.resize(histDims[0]);
+    memcpy(&histogram[0], hist->GetOutput()->GetScalarPointer(), sizeof(uint32_t) * histDims[0]);
+
+    //auto imageGradientMagnitude = vtkSmartPointer<vtkImageGradientMagnitude>::New();
+    //imageGradientMagnitude->SetDimensionality(3);
+    //imageGradientMagnitude->SetInput(imageCast->GetOutput());
+    //imageGradientMagnitude->Update();
+    //auto magData = imageGradientMagnitude->GetOutput();
+    //auto magRange = magData->GetScalarRange();
+    //maxMagnitude = magRange[2];
 
     //auto ptr = reinterpret_cast<unsigned short*>(data) + 60 * 512 * 512;
     //unsigned char* tmp = new unsigned char[512 * 512 * 3];

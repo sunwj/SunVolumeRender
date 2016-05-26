@@ -18,10 +18,11 @@
 #include "core/render_parameters.h"
 #include "core/tonemapping.h"
 #include "core/woodcock_tracking.h"
-#include "core/transmittance.h"
 #include "core/bsdf/henyey_greenstein.h"
 #include "core/bsdf/phong.h"
 #include "core/bsdf/fresnel.h"
+#include "core/lights/cuda_lights.h"
+#include "core/lights/lights.h"
 #include "common.h"
 
 // global variables
@@ -43,6 +44,13 @@ __constant__ cudaCamera camera;
 extern "C" void setup_camera(const cudaCamera& cam)
 {
     checkCudaErrors(cudaMemcpyToSymbol(camera, &cam, sizeof(cudaCamera), 0));
+    checkCudaErrors(cudaDeviceSynchronize());
+}
+
+__constant__ cudaLights lights;
+extern "C" void setup_lights(const Lights& hostLights)
+{
+    checkCudaErrors(cudaMemcpyToSymbol(lights.environmentLight, &(hostLights.environmentLight), sizeof(cudaEnvironmentLight), 0));
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
@@ -101,7 +109,7 @@ __global__ void render_kernel(const RenderParams renderParams, uint32_t hashedFr
         auto t = sample_distance(ray, volume, transferFunction, invSigmaMax, rng);
         if(t < 0.f)
         {
-            L += T * glm::vec3(0.03f);
+            L += T * lights.GetEnvironmentRadiance(ray.dir, renderParams.envLightOffset.x, renderParams.envLightOffset.y);
             break;
         }
 
@@ -114,7 +122,8 @@ __global__ void render_kernel(const RenderParams renderParams, uint32_t hashedFr
         auto opacity = color_opacity.w;
 
         auto wi = glm::normalize(glm::vec3(1.f, 0.f, -1.f));
-        auto Tl = transmittance(ptInWorld, ptInWorld + wi, volume, transferFunction, invSigmaMax, rng);
+        //auto Tl = transmittance(ptInWorld, ptInWorld + wi, volume, transferFunction, invSigmaMax, rng);
+        auto Tl = 0.f;
 
         if(gradientMagnitude < 1e-3)
         {
@@ -133,11 +142,11 @@ __global__ void render_kernel(const RenderParams renderParams, uint32_t hashedFr
             if(glm::dot(normal, ray.dir) > 0.f)
                 normal = -normal;
 
-            float ks = schlick_fresnel(1.0f, 1.5f, glm::dot(-ray.dir, normal));
+            float ks = schlick_fresnel(1.0f, 2.5f, glm::dot(-ray.dir, normal));
             float kd = 1.f - ks;
 
             auto diffuse = albedo * (float)M_1_PI * 0.5f;
-            auto specular = glm::vec3(1.f) * phong_brdf_f(-ray.dir, wi, normal, 10.f);
+            auto specular = glm::vec3(1.f) * phong_brdf_f(-ray.dir, wi, normal, 20.f);
 
             auto cosTerm = fmaxf(0.f, glm::dot(normal, wi));
             L += T * Tl * (kd * diffuse + ks * specular) * cosTerm;
@@ -146,7 +155,7 @@ __global__ void render_kernel(const RenderParams renderParams, uint32_t hashedFr
             if(curand_uniform(&rng) < p)
             {
                 ray.orig = ptInWorld;
-                ray.dir = sample_phong(rng, 10.f, glm::reflect(ray.dir, normal));
+                ray.dir = sample_phong(rng, 20.f, glm::reflect(ray.dir, normal));
 
                 T *= ks / p;
             }

@@ -18,7 +18,7 @@ set(QT_USE_QTOPENGL TRUE)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTORCC ON)
-set(RESOURCES_FILES qdarkstyle/style.qrc)
+set(RESOURCES_FILES qdarkstyle/style.qrc resources/images.qrc)
 
 #VTK
 set(VTK_DIR /Volumes/Free/SDK/CTK/build/VTK-build)
@@ -40,7 +40,9 @@ set(HOST_SOURCES main.cpp
         gui/mainwindow.cpp
         gui/canvas.cpp
         gui/transferfunction.cpp
-        core/VolumeReader.cpp)
+        gui/qcustomplot.cpp
+        core/VolumeReader.cpp
+        core/lights/lights.cpp)
 
 set(DEVICE_SOURCES pathtracer.cu)
 

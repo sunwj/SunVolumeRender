@@ -7,6 +7,8 @@
 
 #include <ctkVTKScalarsToColorsView.h>
 
+#include "qcustomplot.h"
+
 #include "gui/transferfunction.h"
 #include "gui/canvas.h"
 #include "common.h"
@@ -26,12 +28,22 @@ public:
 private:
     void ConfigureTransferFunction();
     void ConfigureCanvas();
+    void ConfigureActions();
+    void ConfigureLight();
 
 private slots:
     void onTransferFunctionChanged()
     {
         canvas->SetTransferFunction(tf->GetCompositeTFTextureObject(), tf->GetMaxOpacityValue());
     };
+
+    void onEnvLightUOffsetChanged(double u);
+    void onEnvLightVOffsetChanged(double v);
+    void onEnvLightBackgroundChanged(QColor color);
+    void onEnvLightMapChanged(const QString& path);
+
+    void onFileOpen();
+
 
 private:
     Ui::MainWindow *ui;

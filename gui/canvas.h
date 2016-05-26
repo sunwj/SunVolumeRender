@@ -17,6 +17,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 #include "core/VolumeReader.h"
+#include "core/lights/lights.h"
 
 #include "common.h"
 #include "utils/helper_cuda.h"
@@ -24,6 +25,7 @@
 #include "core/cuda_transfer_function.h"
 #include "core/cuda_volume.h"
 #include "core/render_parameters.h"
+#include "core/lights/cuda_lights.h"
 
 class Canvas : public QGLWidget
 {
@@ -36,11 +38,28 @@ public:
     {
         transferFunction.Set(tex);
         setup_transferfunction(transferFunction);
-
         ReStartRender();
     };
-
     void ReStartRender() {renderParams.frameNo = 0;}
+    void LoadVolume(std::string filename);
+    const VolumeReader& GetVolume() const {return volumeReader;}
+    void StartTimer() {timerId = this->startTimer(0);}
+    void KillTimer() {this->killTimer(timerId);}
+
+    // lights
+    void SetEnvLightBackground(const glm::vec3& color)
+    {
+        lights.SetEnvionmentLight(color);
+        setup_lights(lights);
+        ReStartRender();
+    }
+    void SetEnvLightMap(std::string filename)
+    {
+        lights.SetEnvironmentLight(filename);
+        setup_lights(lights);
+        ReStartRender();
+    }
+    void SetEnvLightOffset(const glm::vec2& offset) {renderParams.envLightOffset = offset; ReStartRender();}
 
 protected:
     //opengl
@@ -69,6 +88,9 @@ private:
     void UpdateCamera();
 
 private:
+    int timerId;
+    bool ready = false;
+
     GLuint pbo = 0;
     cudaGraphicsResource* resource;
     glm::u8vec4* img;
@@ -79,6 +101,7 @@ private:
     glm::mat4 viewMat = glm::mat4(1.f);
 
     VolumeReader volumeReader;
+    Lights lights;
     RenderParams renderParams;
 
     cudaCamera camera;

@@ -1,0 +1,5 @@
+<RCC>
+  <qresource prefix="icons">
+    <file>folder-horizontal-open.png</file>
+  </qresource>
+</RCC>

@@ -15,6 +15,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ConfigureTransferFunction();
     ConfigureCanvas();
+    ConfigureActions();
+    ConfigureLight();
 
     // initialize transferfunction on device
     canvas->SetTransferFunction(this->tf->GetCompositeTFTextureObject(), this->tf->GetMaxOpacityValue());
@@ -67,4 +69,69 @@ void MainWindow::ConfigureCanvas()
     canvas->setMaximumSize(WIDTH, HEIGHT);
 
     ui->centralLayout->addWidget(canvas);
+}
+
+void MainWindow::ConfigureActions()
+{
+    connect(ui->actionLoadVolume, SIGNAL(triggered()), this, SLOT(onFileOpen()));
+}
+
+void MainWindow::onFileOpen()
+{
+    QString fileName = "";
+    QFileDialog dlg(this, tr("Load volume data"), "./", tr("All(*.*)"));
+    if(dlg.exec())
+        fileName = dlg.selectedFiles()[0];
+
+    canvas->LoadVolume(fileName.toStdString());
+
+    const std::vector<uint32_t >& histogram = canvas->GetVolume().histogram;
+    QVector<double> xAxis(static_cast<uint32_t>(histogram.size()));
+    QVector<double> yAxis(static_cast<uint32_t>(histogram.size()));
+    for(auto i = 0; i < static_cast<uint32_t>(histogram.size()); ++i)
+    {
+        xAxis[i] = i;
+        yAxis[i] = log10(histogram[i] + 1);
+    }
+
+    ui->histogramChart->addGraph();
+    ui->histogramChart->graph(0)->setPen(QPen(QColor(255, 0, 0)));
+    ui->histogramChart->graph(0)->setBrush(QBrush(QColor(255, 0, 0)));
+    ui->histogramChart->graph(0)->setData(xAxis, yAxis);
+    ui->histogramChart->graph(0)->rescaleAxes();
+    ui->histogramChart->replot();
+}
+
+void MainWindow::ConfigureLight()
+{
+    connect(ui->SliderWidget_EnvLightUOffset, SIGNAL(valueChanged(double)), this, SLOT(onEnvLightUOffsetChanged(double)));
+    connect(ui->SliderWidget_EnvLightVOffset, SIGNAL(valueChanged(double)), this, SLOT(onEnvLightVOffsetChanged(double)));
+    connect(ui->ColorPickerButton_EnvBackground, SIGNAL(colorChanged(QColor)), this, SLOT(onEnvLightBackgroundChanged(QColor)));
+
+    QStringList nameFilters;
+    nameFilters << "*.hdr";
+    ui->PathLineEdit_EnvMap->setNameFilters(nameFilters);
+    connect(ui->PathLineEdit_EnvMap, SIGNAL(currentPathChanged(const QString&)), this, SLOT(onEnvLightMapChanged(const QString&)));
+}
+
+void MainWindow::onEnvLightUOffsetChanged(double u)
+{
+    double v = ui->SliderWidget_EnvLightVOffset->value();
+    canvas->SetEnvLightOffset(glm::vec2(u, v));
+}
+
+void MainWindow::onEnvLightVOffsetChanged(double v)
+{
+    double u = ui->SliderWidget_EnvLightUOffset->value();
+    canvas->SetEnvLightOffset(glm::vec2(u, v));
+}
+
+void MainWindow::onEnvLightBackgroundChanged(QColor color)
+{
+    canvas->SetEnvLightBackground(glm::vec3(color.red(), color.green(), color.blue()) * 0.002f);
+}
+
+void MainWindow::onEnvLightMapChanged(const QString &path)
+{
+    canvas->SetEnvLightMap(path.toStdString());
 }

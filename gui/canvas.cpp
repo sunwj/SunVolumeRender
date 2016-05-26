@@ -6,7 +6,24 @@
 
 Canvas::Canvas(const QGLFormat &format, QWidget *parent) : QGLWidget(format, parent)
 {
-    volumeReader.Read("../manix_small.mhd");
+    // lights
+    lights.SetEnvironmentLight("LA_Downtown_Helipad_GoldenHour_Env.hdr");
+    setup_lights(lights);
+
+    // render params
+    renderParams.SetupHDRBuffer(WIDTH, HEIGHT);
+    renderParams.exposure = 1.f;
+    renderParams.traceDepth = 5;
+}
+
+Canvas::~Canvas()
+{
+    renderParams.Clear();
+}
+
+void Canvas::LoadVolume(std::string filename)
+{
+    volumeReader.Read(filename);
     volumeReader.CreateDeviceVolume(&deviceVolume);
     setup_volume(deviceVolume);
 
@@ -15,15 +32,8 @@ Canvas::Canvas(const QGLFormat &format, QWidget *parent) : QGLWidget(format, par
     viewMat = glm::lookAt(glm::vec3(0.f, 0.f, eyeDist), glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f));
     UpdateCamera();
 
-    // render params
-    renderParams.SetupHDRBuffer(WIDTH, HEIGHT);
-    renderParams.exposure = 3.f;
-    renderParams.traceDepth = 5;
-}
-
-Canvas::~Canvas()
-{
-    renderParams.Clear();
+    ready = true;
+    StartTimer();
 }
 
 void Canvas::initializeGL()
@@ -39,8 +49,6 @@ void Canvas::initializeGL()
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
     
     checkCudaErrors(cudaGraphicsGLRegisterBuffer(&resource, pbo, cudaGraphicsMapFlagsNone));
-
-    this->startTimer(0);
 }
 
 void Canvas::resizeGL(int w, int h)
@@ -51,6 +59,8 @@ void Canvas::resizeGL(int w, int h)
 void Canvas::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT);
+
+    if(!ready) return;
 
     size_t size;
     checkCudaErrors(cudaGraphicsMapResources(1, &resource, 0));
@@ -103,7 +113,7 @@ void Canvas::mouseMoveEvent(QMouseEvent *e)
     // translation
     if(e->buttons() & Qt::MidButton)
     {
-        constexpr float baseTranslate = 5.f;
+        float baseTranslate = glm::length(deviceVolume.GetSize()) * 0.5f;
         cameraTranslate.x += static_cast<float>(delta.x() * baseTranslate);
         cameraTranslate.y += static_cast<float>(delta.y() * baseTranslate);
 

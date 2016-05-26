@@ -13,6 +13,7 @@
 #include <vtkImageData.h>
 #include <vtkImageCast.h>
 #include <vtkImageMagnitude.h>
+#include <vtkImageAccumulate.h>
 #include <vtkSmartPointer.h>
 #include <vtkErrorCode.h>
 
@@ -36,6 +37,9 @@ private:
     template <typename T, typename UT>
     void Rescale(T* dataPtr, size_t size, float dataMin, float dataMax);
     void CreateTextures();
+
+public:
+    std::vector<uint32_t> histogram;
 
 private:
     glm::vec3 spacing = glm::vec3(glm::uninitialize);
