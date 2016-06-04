@@ -1,5 +1,8 @@
 <RCC>
   <qresource prefix="icons">
+    <file alias="light_bulb">lightbulb_light_47.556675062972px_1138966_easyicon.net.png</file>
+    <file>add_circle_outline_64px_1181635_easyicon.net.png</file>
+    <file>remove_circle_outline_64px_1182165_easyicon.net.png</file>
     <file>folder-horizontal-open.png</file>
   </qresource>
 </RCC>

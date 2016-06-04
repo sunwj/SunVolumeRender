@@ -19,10 +19,11 @@
 
 __inline__ __device__ float opacity_to_sigmat(float opacity)
 {
+    opacity = fminf(opacity, 0.99f);
     return -logf(1.f - opacity) * BASE_SAMPLE_STEP_SIZE;
 }
 
-__inline__ __device__ float sample_distance(const cudaRay& ray, const cudaVolume& volume, const cudaTransferFunction& tf, float invSigmaMax, curandState& rng)
+__inline__ __device__ float sample_distance(const cudaRay& ray, const cudaVolume& volume, const cudaTransferFunction& tf, curandState& rng)
 {
     float tNear, tFar;
     if(volume.Intersect(ray, &tNear, &tFar))
@@ -31,6 +32,7 @@ __inline__ __device__ float sample_distance(const cudaRay& ray, const cudaVolume
         ray.tMax = tFar;
         auto t = ray.tMin;
 
+        float invSigmaMax = 1.f / opacity_to_sigmat(tf.GetMaxOpacity());
         while(true)
         {
             t += -logf(1.f - curand_uniform(&rng)) * invSigmaMax;

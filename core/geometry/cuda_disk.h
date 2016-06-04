@@ -15,10 +15,24 @@
 class cudaDisk
 {
 public:
-    __device__ bool Intersect(const cudaRay& ray, float* t)
+    __host__ __device__ cudaDisk() {}
+
+    __host__ __device__ cudaDisk(const glm::vec3& center, const glm::vec3& normal, float radius)
+    {
+        Set(center, normal, radius);
+    }
+
+    __host__ __device__ void Set(const glm::vec3& center, const glm::vec3& normal, float radius)
+    {
+        this->center = center;
+        this->normal = normal;
+        this->radius = radius;
+    }
+
+    __device__ bool Intersect(const cudaRay& ray, float* t) const
     {
         auto denom = glm::dot(normal, ray.dir);
-        if(denom > 1e-6)
+        if(fabsf(denom) > 1e-6)
         {
             auto co = center - ray.orig;
             *t = glm::dot(co, normal) / denom;
@@ -27,7 +41,7 @@ public:
             {
                 auto p = ray.orig + *t * ray.dir;
                 auto co = p - center;
-                return sqrtf(glm::length(v) <= radius);
+                return sqrtf(glm::length(co)) <= radius;
             }
 
             return false;
@@ -36,7 +50,12 @@ public:
         return false;
     }
 
-private:
+    __host__ __device__ float GetArea() const
+    {
+        return M_PI * radius * radius;
+    }
+
+public:
     float radius;
     glm::vec3 center;
     glm::vec3 normal;

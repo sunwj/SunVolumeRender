@@ -30,6 +30,7 @@ public:
     void Read(std::string filename);
     void CreateDeviceVolume(cudaVolume* volume);
     glm::vec3 GetVolumeSize();
+    float GetBoundingSphereRadius();
 
 private:
     void ClearHost();

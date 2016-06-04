@@ -13,9 +13,10 @@
 class cudaTransferFunction
 {
 public:
-    __host__ __device__ void Set(const cudaTextureObject_t& tex)
+    __host__ __device__ void Set(const cudaTextureObject_t& tex, float maxOpacity)
     {
         this->tex = tex;
+        this->maxOpacity = maxOpacity;
     }
 
     __device__ glm::vec4 operator ()(float intensity) const
@@ -48,8 +49,14 @@ public:
 #endif
     }
 
+    __device__ float GetMaxOpacity() const
+    {
+        return maxOpacity;
+    }
+
 private:
     cudaTextureObject_t tex;
+    float maxOpacity;
 };
 
 #endif //SUNVOLUMERENDER_CUDA_TRANSFER_FUNCTION_H

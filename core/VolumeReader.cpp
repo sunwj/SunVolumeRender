@@ -186,3 +186,9 @@ glm::vec3 VolumeReader::GetVolumeSize()
 {
     return glm::vec3(dim.x * spacing.x, dim.y * spacing.y, dim.z * spacing.z);
 }
+
+float VolumeReader::GetBoundingSphereRadius()
+{
+    auto size = GetVolumeSize();
+    return glm::length(size) * 0.5f;
+}

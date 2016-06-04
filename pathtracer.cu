@@ -5,6 +5,7 @@
 #define GLM_FORCE_NO_CTOR_INIT
 #include <stdio.h>
 
+#define GLM_FORCE_INLINE
 #include <glm/glm.hpp>
 
 #include <cuda_runtime.h>
@@ -18,11 +19,13 @@
 #include "core/render_parameters.h"
 #include "core/tonemapping.h"
 #include "core/woodcock_tracking.h"
+#include "core/transmittance.h"
 #include "core/bsdf/henyey_greenstein.h"
 #include "core/bsdf/phong.h"
 #include "core/bsdf/fresnel.h"
-#include "core/lights/cuda_lights.h"
 #include "core/lights/lights.h"
+#include "core/lights/cuda_environment_light.h"
+#include "core/lights/light_sample.h"
 #include "common.h"
 
 // global variables
@@ -47,10 +50,18 @@ extern "C" void setup_camera(const cudaCamera& cam)
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
-__constant__ cudaLights lights;
-extern "C" void setup_lights(const Lights& hostLights)
+__constant__ uint32_t num_areaLights;
+__constant__ cudaAreaLight areaLights[MAX_LIGHT_SOURCES];
+extern "C" void setup_area_lights(cudaAreaLight* lights, uint32_t n)
 {
-    checkCudaErrors(cudaMemcpyToSymbol(lights.environmentLight, &(hostLights.environmentLight), sizeof(cudaEnvironmentLight), 0));
+    checkCudaErrors(cudaMemcpyToSymbol(num_areaLights, &n, sizeof(uint32_t), 0));
+    checkCudaErrors(cudaMemcpyToSymbol(areaLights, lights, sizeof(cudaAreaLight) * n, 0));
+}
+
+__constant__ cudaEnvironmentLight envLight;
+extern "C" void setup_env_lights(const cudaEnvironmentLight& light)
+{
+    checkCudaErrors(cudaMemcpyToSymbol(envLight, &light, sizeof(cudaEnvironmentLight), 0));
     checkCudaErrors(cudaDeviceSynchronize());
 }
 
@@ -89,6 +100,62 @@ __inline__ __device__ bool terminate_with_raussian_roulette(glm::vec3* troughput
     return false;
 }
 
+enum ShadingType{SHANDING_TYPE_ISOTROPIC, SHANDING_TYPE_BRDF};
+__inline__ __device__ glm::vec3 bsdf(const VolumeSample vs, const glm::vec3& wi, ShadingType st)
+{
+    glm::vec3 diffuseColor = glm::vec3(vs.color_opacity.x, vs.color_opacity.y, vs.color_opacity.z);
+
+    glm::vec3 L;
+    if(st == SHANDING_TYPE_ISOTROPIC)
+    {
+         L = diffuseColor * hg_phase_f(vs.wo, wi);
+    }
+    else if(st == SHANDING_TYPE_BRDF)
+    {
+        auto normal = glm::normalize(vs.gradient);
+        if(glm::dot(normal, vs.wo) < 0.f)
+            normal = -normal;
+
+        float cosTerm = fmaxf(0.f, glm::dot(wi, normal));
+        float ks = schlick_fresnel(1.0f, 2.5f, cosTerm);
+        float kd = 1.f - ks;
+
+        auto diffuse = diffuseColor * (float)M_1_PI * 0.5f;
+        auto specular = glm::vec3(1.f) * phong_brdf_f(vs.wo, wi, normal, 20.f);
+
+        L = (kd * diffuse + ks * specular) * cosTerm;
+    }
+
+    return L;
+}
+
+__inline__ __device__ glm::vec3 estimate_direct_light(const VolumeSample vs, curandState& rng, ShadingType st)
+{
+    glm::vec3 Li = glm::vec3(0.f);
+
+    if(num_areaLights == 0)
+        return Li;
+
+    // randomly choose a single light
+    int lightId = num_areaLights * curand_uniform(&rng);
+    lightId = lightId < num_areaLights ? lightId : num_areaLights - 1;
+    cudaAreaLight& light = areaLights[lightId];
+
+    // sample light
+    glm::vec3 lightPos;
+    glm::vec3 wi;
+    float pdf;
+    Li = sample_light(light, vs.ptInWorld, rng, &lightPos, &wi, &pdf);
+
+    if(pdf > 0.f && fmaxf(Li.x, fmaxf(Li.y, Li.z)) > 0.f)
+    {
+        auto Tr = transmittance(vs.ptInWorld, lightPos, volume, transferFunction, rng);
+        Li = Tr * num_areaLights * bsdf(vs, wi, st) * Li / pdf;
+    }
+
+    return Li;
+}
+
 __global__ void render_kernel(const RenderParams renderParams, uint32_t hashedFrameNo)
 {
     auto idx = blockDim.x * blockIdx.x + threadIdx.x;
@@ -103,68 +170,74 @@ __global__ void render_kernel(const RenderParams renderParams, uint32_t hashedFr
     cudaRay ray;
     camera.GenerateRay(idx, idy, rng, &ray);
 
-    auto invSigmaMax = 1.f / opacity_to_sigmat(renderParams.maxOpacity);
+    LightSample ls;
+    bool hitLight = get_nearest_light_sample(ray, areaLights, num_areaLights, &ls);
     for(auto k = 0; k < renderParams.traceDepth; ++k)
     {
-        auto t = sample_distance(ray, volume, transferFunction, invSigmaMax, rng);
+        auto t = sample_distance(ray, volume, transferFunction, rng);
+
+        if((k == 0) && hitLight)
+        {
+            t = t < 0.f ? FLT_MAX : t;
+            if(ls.t < t)
+            {
+                auto cosTerm = glm::dot(ls.normal, -ray.dir);
+                L += T * ls.radiance * float(M_1_PI) * 0.5f * (cosTerm <= 0.f ? 0.f : 1.f);
+                break;
+            }
+        }
+
         if(t < 0.f)
         {
-            L += T * lights.GetEnvironmentRadiance(ray.dir, renderParams.envLightOffset.x, renderParams.envLightOffset.y);
+            L += T * envLight.GetEnvRadiance(ray.dir);
             break;
         }
 
-        auto ptInWorld = ray.PointOnRay(t);
-        auto intensity = volume(ptInWorld);
-        auto gradient = volume.Gradient_CentralDiff(ptInWorld);
-        auto gradientMagnitude = sqrtf(glm::dot(gradient, gradient));
-        auto color_opacity = transferFunction(intensity);
-        auto albedo = glm::vec3(color_opacity.x, color_opacity.y, color_opacity.z);
-        auto opacity = color_opacity.w;
+        VolumeSample vs;
 
-        auto wi = glm::normalize(glm::vec3(1.f, 0.f, -1.f));
-        //auto Tl = transmittance(ptInWorld, ptInWorld + wi, volume, transferFunction, invSigmaMax, rng);
-        auto Tl = 0.f;
+        vs.wo = -ray.dir;
+        vs.ptInWorld = ray.PointOnRay(t);
+        vs.intensity = volume(vs.ptInWorld);
+        vs.color_opacity = transferFunction(vs.intensity);
+        vs.gradient = volume.Gradient_CentralDiff(vs.ptInWorld);
+        vs.gradientMagnitude = sqrtf(glm::dot(vs.gradient, vs.gradient));
 
-        if(gradientMagnitude < 1e-3)
+        if(vs.gradientMagnitude < 1e-3)
         {
-            L += T * Tl * albedo * hg_phase_f(-ray.dir, wi, 0.f);
+            L += T * estimate_direct_light(vs, rng, SHANDING_TYPE_ISOTROPIC);
 
             glm::vec3 newDir;
             hg_phase_sample_f(0.f, -ray.dir, &newDir, nullptr, rng);
-            ray.orig = ptInWorld;
+            ray.orig = vs.ptInWorld;
             ray.dir = newDir;
 
-            T *= albedo;
+            T *= glm::vec3(vs.color_opacity.x, vs.color_opacity.y, vs.color_opacity.z);
         }
         else
         {
-            auto normal = glm::normalize(gradient);
-            if(glm::dot(normal, ray.dir) > 0.f)
+            auto normal = glm::normalize(vs.gradient);
+            if(glm::dot(normal, vs.wo) < 0.f)
                 normal = -normal;
 
-            float ks = schlick_fresnel(1.0f, 2.5f, glm::dot(-ray.dir, normal));
-            float kd = 1.f - ks;
+            L += T * estimate_direct_light(vs, rng, SHANDING_TYPE_BRDF);
 
-            auto diffuse = albedo * (float)M_1_PI * 0.5f;
-            auto specular = glm::vec3(1.f) * phong_brdf_f(-ray.dir, wi, normal, 20.f);
-
-            auto cosTerm = fmaxf(0.f, glm::dot(normal, wi));
-            L += T * Tl * (kd * diffuse + ks * specular) * cosTerm;
-
+            auto cosTerm = fmaxf(0.f, glm::dot(vs.wo, normal));
+            auto ks = schlick_fresnel(1.f, 2.5f, cosTerm);
+            auto kd = 1.f - ks;
             auto p = 0.25f + 0.5f * ks;
             if(curand_uniform(&rng) < p)
             {
-                ray.orig = ptInWorld;
+                ray.orig = vs.ptInWorld;
                 ray.dir = sample_phong(rng, 20.f, glm::reflect(ray.dir, normal));
 
                 T *= ks / p;
             }
             else
             {
-                ray.orig = ptInWorld;
+                ray.orig = vs.ptInWorld;
                 ray.dir = cosine_weightd_sample_hemisphere(rng, normal);
 
-                T *= albedo;
+                T *= glm::vec3(vs.color_opacity.x, vs.color_opacity.y, vs.color_opacity.z);
                 T *= kd / (1.f - p);
             }
         }

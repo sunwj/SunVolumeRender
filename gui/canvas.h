@@ -25,7 +25,6 @@
 #include "core/cuda_transfer_function.h"
 #include "core/cuda_volume.h"
 #include "core/render_parameters.h"
-#include "core/lights/cuda_lights.h"
 
 class Canvas : public QGLWidget
 {
@@ -36,13 +35,12 @@ public:
 
     void SetTransferFunction(const cudaTextureObject_t& tex, float maxOpacity)
     {
-        transferFunction.Set(tex);
+        transferFunction.Set(tex, maxOpacity);
         setup_transferfunction(transferFunction);
         ReStartRender();
     };
     void ReStartRender() {renderParams.frameNo = 0;}
     void LoadVolume(std::string filename);
-    const VolumeReader& GetVolume() const {return volumeReader;}
     void StartTimer() {timerId = this->startTimer(0);}
     void KillTimer() {this->killTimer(timerId);}
 
@@ -50,16 +48,36 @@ public:
     void SetEnvLightBackground(const glm::vec3& color)
     {
         lights.SetEnvionmentLight(color);
-        setup_lights(lights);
+        setup_env_lights(lights.environmentLight);
         ReStartRender();
     }
+
     void SetEnvLightMap(std::string filename)
     {
         lights.SetEnvironmentLight(filename);
-        setup_lights(lights);
+        setup_env_lights(lights.environmentLight);
         ReStartRender();
     }
-    void SetEnvLightOffset(const glm::vec2& offset) {renderParams.envLightOffset = offset; ReStartRender();}
+
+    void SetEnvLightOffset(const glm::vec2& offset)
+    {
+        lights.SetEnvironmentLightOffset(offset);
+        setup_env_lights(lights.environmentLight);
+        ReStartRender();
+    }
+
+    void SetEnvLightIntensity(float intensity)
+    {
+        lights.SetEnvironmentLightIntensity(intensity);
+        setup_env_lights(lights.environmentLight);
+        ReStartRender();
+    }
+
+    void SetAreaLights()
+    {
+        setup_area_lights(lights.areaLights.data(), lights.areaLights.size());
+        ReStartRender();
+    }
 
 protected:
     //opengl
@@ -87,6 +105,10 @@ protected:
 private:
     void UpdateCamera();
 
+public:
+    VolumeReader volumeReader;
+    Lights lights;
+
 private:
     int timerId;
     bool ready = false;
@@ -100,8 +122,6 @@ private:
     glm::vec2 cameraTranslate = glm::vec2(0.f);
     glm::mat4 viewMat = glm::mat4(1.f);
 
-    VolumeReader volumeReader;
-    Lights lights;
     RenderParams renderParams;
 
     cudaCamera camera;

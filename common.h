@@ -8,4 +8,6 @@
 #define WIDTH 640
 #define HEIGHT 640
 
+#define MAX_LIGHT_SOURCES 8
+
 #endif //SUNVOLUMERENDER_COMMON_H

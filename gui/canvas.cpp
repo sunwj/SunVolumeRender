@@ -8,7 +8,8 @@ Canvas::Canvas(const QGLFormat &format, QWidget *parent) : QGLWidget(format, par
 {
     // lights
     lights.SetEnvironmentLight("LA_Downtown_Helipad_GoldenHour_Env.hdr");
-    setup_lights(lights);
+    lights.SetEnvironmentLightIntensity(1.f);
+    setup_env_lights(lights.environmentLight);
 
     // render params
     renderParams.SetupHDRBuffer(WIDTH, HEIGHT);
@@ -109,7 +110,6 @@ void Canvas::mouseMoveEvent(QMouseEvent *e)
         e->accept();
     }
 
-    //todo: need fix
     // translation
     if(e->buttons() & Qt::MidButton)
     {
@@ -128,10 +128,12 @@ void Canvas::mouseMoveEvent(QMouseEvent *e)
     e->ignore();
 }
 
-//todo: implement it
 void Canvas::wheelEvent(QWheelEvent *e)
 {
+    int delta = e->delta();
+    eyeDist += delta * glm::length(volumeReader.GetVolumeSize()) * 0.001f;
 
+    UpdateCamera();
     ReStartRender();
     e->accept();
 }

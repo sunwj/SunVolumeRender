@@ -27,7 +27,6 @@ include(${VTK_USE_FILE})
 
 #CTK
 set(CTK_DIR /Volumes/Free/SDK/CTK/build/)
-#set(CTK_DIR /Users/sunwj/Desktop/SDK/CTK/build)
 find_package(CTK REQUIRED)
 include(${CTK_USE_FILE})
 set(CTK_LIBRARIES CTKCore CTKWidgets CTKVisualizationVTKCore CTKVisualizationVTKWidgets)
@@ -42,7 +41,7 @@ set(HOST_SOURCES main.cpp
         gui/transferfunction.cpp
         gui/qcustomplot.cpp
         core/VolumeReader.cpp
-        core/lights/lights.cpp)
+        core/lights/lights.cpp gui/AddAreaLightDialog.cpp gui/AddAreaLightDialog.h)
 
 set(DEVICE_SOURCES pathtracer.cu)
 

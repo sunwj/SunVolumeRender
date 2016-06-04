@@ -94,4 +94,14 @@ private:
     glm::vec3 invSpacing;
 };
 
+struct VolumeSample
+{
+    glm::vec3 ptInWorld;
+    glm::vec3 wo;
+    float intensity;
+    glm::vec3 gradient;
+    float gradientMagnitude;
+    glm::vec4 color_opacity;
+};
+
 #endif //SUNVOLUMERENDER_VOLUME_H

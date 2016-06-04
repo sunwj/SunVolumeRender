@@ -78,3 +78,76 @@ void Lights::SetEnvionmentLight(const glm::vec3 &radiance)
 {
     environmentLight.Set(radiance);
 }
+
+void Lights::SetEnvironmentLightIntensity(float intensity)
+{
+    environmentLight.SetIntensity(intensity);
+}
+
+void Lights::SetEnvironmentLightOffset(const glm::vec2 &offset)
+{
+    environmentLight.SetOffset(offset);
+}
+
+void Lights::AddAreaLights(const cudaAreaLight &areaLight, const glm::vec3& tm)
+{
+    if(areaLights.size() <= MAX_LIGHT_SOURCES)
+    {
+        areaLights.push_back(areaLight);
+        transforms.push_back(tm);
+    }
+    else
+    {
+        std::cerr<<"Exceed maximum number of light sources"<<std::endl;
+    }
+}
+
+void Lights::RemoveLights(uint32_t idx)
+{
+    if(areaLights.size() > 0)
+    {
+        areaLights.erase(areaLights.begin() + idx);
+        transforms.erase(transforms.begin() + idx);
+    }
+    else
+    {
+        std::cerr<<"No lights exists"<<std::endl;
+    }
+}
+
+cudaAreaLight* Lights::GetAreaLight(uint32_t idx)
+{
+    if(areaLights.size() > 0)
+    {
+        return &areaLights[idx];
+    }
+    else
+    {
+        std::cerr<<"No lights exists"<<std::endl;
+        exit(0);
+    }
+}
+
+cudaAreaLight* Lights::GetLastAreaLight()
+{
+    if(areaLights.size() == 0)
+    {
+        std::cerr<<"No lights exists"<<std::endl;
+        exit(0);
+    }
+
+    return &areaLights[areaLights.size() - 1];
+}
+
+glm::vec3* Lights::GetAreaLightTransformation(uint32_t idx)
+{
+    if(areaLights.size() > 0)
+    {
+        return &transforms[idx];
+    }
+    else
+    {
+        std::cerr<<"No lights exists"<<std::endl;
+        exit(0);
+    }
+}

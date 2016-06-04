@@ -35,9 +35,7 @@ public:
     uint32_t traceDepth = 1;
     uint32_t frameNo = 0;
     float exposure = 1.f;
-    float maxOpacity = 0.5f;
     glm::vec3* hdrBuffer = nullptr;
-    glm::vec2 envLightOffset = glm::vec2(0.f);
 };
 
 #endif //SUNVOLUMERENDER_RENDER_PARAMETERS_H

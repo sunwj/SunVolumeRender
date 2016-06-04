@@ -20,6 +20,7 @@ extern "C" void rendering(glm::u8vec4* img, const RenderParams& renderParams);
 extern "C" void setup_volume(const cudaVolume& vol);
 extern "C" void setup_transferfunction(const cudaTransferFunction& tf);
 extern "C" void setup_camera(const cudaCamera& cam);
-extern "C" void setup_lights(const Lights& hostLights);
+extern "C" void setup_env_lights(const cudaEnvironmentLight& light);
+extern "C" void setup_area_lights(cudaAreaLight* lights, uint32_t n);
 
 #endif //SUNVOLUMERENDER_PATHTRACER_H
