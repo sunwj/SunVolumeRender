@@ -25,7 +25,10 @@ __inline__ __device__ glm::vec2 uniform_sample_unit_disk(curandState& rng)
 // return x and y in cartesian coordinate
 __inline__ __device__ glm::vec2 uniform_sample_disk(curandState& rng, float r)
 {
-    return glm::vec2(cosf(2.f * M_PI * curand_uniform(&rng)), sinf(sqrtf(curand_uniform(&rng)))) * r;
+    r *= sqrtf(curand_uniform(&rng));
+    float theta = 2.f * M_PI * curand_uniform(&rng);
+
+    return glm::vec2(cosf(theta), sinf(theta)) * r;
 }
 
 // return direction in cartesian space
