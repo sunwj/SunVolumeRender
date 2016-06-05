@@ -1,5 +1,8 @@
 <RCC>
   <qresource prefix="icons">
+    <file>Color_picker_64px_1100527_easyicon.net.png</file>
+    <file>light_bulb_64px_1076410_easyicon.net.png</file>
+    <file>photo_camera_77.241379310345px_1201192_easyicon.net.png</file>
     <file alias="light_bulb">lightbulb_light_47.556675062972px_1138966_easyicon.net.png</file>
     <file>add_circle_outline_64px_1181635_easyicon.net.png</file>
     <file>remove_circle_outline_64px_1182165_easyicon.net.png</file>

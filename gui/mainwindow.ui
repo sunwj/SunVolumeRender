@@ -93,6 +93,10 @@
         <number>0</number>
        </property>
        <widget class="QWidget" name="tabVolumeProperty">
+        <attribute name="icon">
+         <iconset resource="../resources/images.qrc">
+          <normaloff>:/icons/Color_picker_64px_1100527_easyicon.net.png</normaloff>:/icons/Color_picker_64px_1100527_easyicon.net.png</iconset>
+        </attribute>
         <attribute name="title">
          <string>Volume Property</string>
         </attribute>
@@ -219,6 +223,10 @@
         </layout>
        </widget>
        <widget class="QWidget" name="tabLightProperty">
+        <attribute name="icon">
+         <iconset resource="../resources/images.qrc">
+          <normaloff>:/icons/light_bulb_64px_1076410_easyicon.net.png</normaloff>:/icons/light_bulb_64px_1076410_easyicon.net.png</iconset>
+        </attribute>
         <attribute name="title">
          <string>Light</string>
         </attribute>
@@ -555,6 +563,10 @@
         </layout>
        </widget>
        <widget class="QWidget" name="tab">
+        <attribute name="icon">
+         <iconset resource="../resources/images.qrc">
+          <normaloff>:/icons/photo_camera_77.241379310345px_1201192_easyicon.net.png</normaloff>:/icons/photo_camera_77.241379310345px_1201192_easyicon.net.png</iconset>
+        </attribute>
         <attribute name="title">
          <string>Camera</string>
         </attribute>
