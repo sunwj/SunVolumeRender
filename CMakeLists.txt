@@ -21,14 +21,14 @@ set(CMAKE_AUTORCC ON)
 set(RESOURCES_FILES qdarkstyle/style.qrc resources/images.qrc)
 
 #VTK
-#set(VTK_DIR /Volumes/Free/SDK/CTK/build/VTK-build)
-set(VTK_DIR /Users/sunwj/Desktop/SDK/CTK/build/VTK-build)
+set(VTK_DIR /Volumes/Free/SDK/CTK/build/VTK-build)
+#set(VTK_DIR /Users/sunwj/Desktop/SDK/CTK/build/VTK-build)
 find_package(VTK REQUIRED)
 include(${VTK_USE_FILE})
 
 #CTK
-#set(CTK_DIR /Volumes/Free/SDK/CTK/build/)
-set(CTK_DIR /Users/sunwj/Desktop/SDK/CTK/build)
+set(CTK_DIR /Volumes/Free/SDK/CTK/build/)
+#set(CTK_DIR /Users/sunwj/Desktop/SDK/CTK/build)
 find_package(CTK REQUIRED)
 include(${CTK_USE_FILE})
 set(CTK_LIBRARIES CTKCore CTKWidgets CTKVisualizationVTKCore CTKVisualizationVTKWidgets)

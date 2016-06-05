@@ -62,9 +62,9 @@ __inline__ __device__ glm::vec3 sample_light(const cudaAreaLight& light, const g
     *wi = glm::normalize(shadowVec);
 
     float cosTerm = glm::dot(lightNormal, -(*wi));
-    *pdf = glm::dot(shadowVec, shadowVec) / (fabsf(cosTerm) * light.GetArea());
+    *pdf = 0.001f * glm::dot(shadowVec, shadowVec) / (fabsf(cosTerm) * light.GetArea());
 
-    return cosTerm > 0.f ? light.GetRadiance() * float(M_1_PI) * 0.5f : glm::vec3(0.f);
+    return cosTerm > 0.f ? light.GetRadiance() : glm::vec3(0.f);
 }
 
 #endif //SUNVOLUMERENDER_LIGHT_SAMPLE_H

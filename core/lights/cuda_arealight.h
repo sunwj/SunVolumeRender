@@ -54,7 +54,7 @@ public:
 
     __host__ __device__ glm::vec3 GetColor() const {return color;}
     __host__ __device__ float GetIntensity() const {return intensity;}
-    __host__ __device__ glm::vec3 GetRadiance() const {return color * intensity / disk.GetArea();}
+    __host__ __device__ glm::vec3 GetRadiance() const {return color * intensity * float(M_1_PI) * 0.5f / disk.GetArea();}
     __host__ __device__ float GetRadius() const {return disk.radius;}
     __host__ __device__ float GetArea() const {return disk.GetArea();}
     __host__ __device__ glm::vec3 GetCenter() const {return disk.center;}

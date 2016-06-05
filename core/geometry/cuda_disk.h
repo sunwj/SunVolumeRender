@@ -41,7 +41,7 @@ public:
             {
                 auto p = ray.orig + *t * ray.dir;
                 auto co = p - center;
-                return sqrtf(glm::length(co)) <= radius;
+                return sqrtf(glm::dot(co, co)) <= radius;
             }
 
             return false;

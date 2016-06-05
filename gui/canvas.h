@@ -44,6 +44,12 @@ public:
     void StartTimer() {timerId = this->startTimer(0);}
     void KillTimer() {this->killTimer(timerId);}
 
+    void SetScatterTimes(double val)
+    {
+        renderParams.traceDepth = val;
+        ReStartRender();
+    }
+
     // lights
     void SetEnvLightBackground(const glm::vec3& color)
     {
@@ -77,6 +83,34 @@ public:
     {
         setup_area_lights(lights.areaLights.data(), lights.areaLights.size());
         ReStartRender();
+    }
+
+    // camera
+    void SetFOV(float fov)
+    {
+        this->fov = fov;
+        UpdateCamera();
+        ReStartRender();
+    }
+
+    void SetApeture(float apeture)
+    {
+        this->apeture = apeture;
+        UpdateCamera();
+        ReStartRender();
+    }
+
+    void SetFocalLength(float focalLength)
+    {
+        this->focalLength = focalLength;
+        UpdateCamera();
+        ReStartRender();
+    }
+
+    void SetExposure(float exposure)
+    {
+        this->exposure = exposure;
+        UpdateCamera();
     }
 
 protected:
@@ -117,7 +151,10 @@ private:
     cudaGraphicsResource* resource;
     glm::u8vec4* img;
     QPointF mouseStartPoint;
+    float exposure = 1.f;
+    float apeture = 0.f;
     float fov = 45.f;
+    float focalLength = 1.f;
     float eyeDist = 0.f;
     glm::vec2 cameraTranslate = glm::vec2(0.f);
     glm::mat4 viewMat = glm::mat4(1.f);

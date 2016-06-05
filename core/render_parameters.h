@@ -34,7 +34,6 @@ public:
 public:
     uint32_t traceDepth = 1;
     uint32_t frameNo = 0;
-    float exposure = 1.f;
     glm::vec3* hdrBuffer = nullptr;
 };
 

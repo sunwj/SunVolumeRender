@@ -15,7 +15,7 @@
 #include "cuda_volume.h"
 #include "cuda_transfer_function.h"
 
-#define BASE_SAMPLE_STEP_SIZE 1.f
+#define BASE_SAMPLE_STEP_SIZE 0.5f
 
 __inline__ __device__ float opacity_to_sigmat(float opacity)
 {

@@ -13,22 +13,26 @@
 
 #include "cuda_ray.h"
 
+#ifdef __CUDACC__
+#include "sampling.h"
+#endif
+
 class cudaCamera
 {
 public:
     __host__ __device__ cudaCamera() {}
 
-    __host__ __device__ cudaCamera(const glm::vec3& _pos, const glm::vec3& _u, const glm::vec3& _v, const glm::vec3& _w, float fovx = 45.f, unsigned int _imageW = 640, unsigned int _imageH = 480)
+    __host__ __device__ cudaCamera(const glm::vec3& _pos, const glm::vec3& _u, const glm::vec3& _v, const glm::vec3& _w, float fovx = 45.f, float apeture = 0.f, float focalLength = 0.f, float exposure = 1.f, unsigned int _imageW = 640, unsigned int _imageH = 480)
     {
-        Setup(_pos, _u, _v, _w, fovx, _imageW, _imageH);
+        Setup(_pos, _u, _v, _w, fovx, apeture, focalLength, exposure, _imageW, _imageH);
     }
 
-    __host__ __device__ cudaCamera(const glm::vec3& _pos, const glm::vec3& target, const glm::vec3& up, float fovx = 45.f, unsigned int _imageW = 640, unsigned int _imageH = 480)
+    __host__ __device__ cudaCamera(const glm::vec3& _pos, const glm::vec3& target, const glm::vec3& up, float fovx = 45.f, float apeture = 0.f, float focalLength = 0.f, float exposure = 1.f, unsigned int _imageW = 640, unsigned int _imageH = 480)
     {
-        Setup(_pos, target, up, fovx, _imageW, _imageH);
+        Setup(_pos, target, up, fovx, apeture, focalLength, exposure, _imageW, _imageH);
     }
 
-    __host__ __device__ void Setup(const glm::vec3& _pos, const glm::vec3& _u, const glm::vec3& _v, const glm::vec3& _w, float fovx, unsigned int _imageW, unsigned int _imageH)
+    __host__ __device__ void Setup(const glm::vec3& _pos, const glm::vec3& _u, const glm::vec3& _v, const glm::vec3& _w, float fovx, float _apeture, float _focalLength, float _exposure, unsigned int _imageW, unsigned int _imageH)
     {
         pos = _pos;
         u = _u;
@@ -38,9 +42,12 @@ public:
         imageH = _imageH;
         aspectRatio = (float)imageW / (float)imageH;
         tanFovxOverTwo = tanf(fovx * 0.5f * M_PI / 180.f);
+        exposure = _exposure;
+        focalLength = _focalLength;
+        apeture = _apeture;
     }
 
-    __host__ __device__ void Setup(const glm::vec3& _pos, const glm::vec3& target, const glm::vec3& up, float fovx, unsigned int _imageW, unsigned int _imageH)
+    __host__ __device__ void Setup(const glm::vec3& _pos, const glm::vec3& target, const glm::vec3& up, float fovx, float _apeture, float _focalLength, float _exposure, unsigned int _imageW, unsigned int _imageH)
     {
         pos = _pos;
         w = normalize(pos - target);
@@ -50,9 +57,12 @@ public:
         imageH = _imageH;
         aspectRatio = (float)imageW / (float)imageH;
         tanFovxOverTwo = tanf(fovx * 0.5f * M_PI / 180.f);
+        exposure = _exposure;
+        focalLength = _focalLength;
+        apeture = _apeture;
     }
 
-    // TODO: depth of field
+#ifdef __CUDACC__
     __device__ void GenerateRay(unsigned int x, unsigned int y, curandState& rng, cudaRay* ray) const
     {
         float nx = 2.f * ((x + curand_uniform(&rng)) / (imageW - 1.f)) - 1.f;
@@ -61,12 +71,23 @@ public:
         nx = nx * aspectRatio * tanFovxOverTwo;
         ny = ny * tanFovxOverTwo;
 
-        ray->orig = pos;
-        ray->dir = normalize(nx * u + ny * v - w);
+        //ray->orig = pos;
+        //ray->dir = normalize(nx * u + ny * v - w);
+
+        nx = nx * focalLength;
+        ny = ny * focalLength;
+
+        glm::vec2 apetureSample = uniform_sample_disk(rng, apeture);
+        ray->orig = pos + apetureSample.x * u + apetureSample.y * v;
+        ray->dir = glm::normalize((nx - apetureSample.x) * u + (ny - apetureSample.y) * v - focalLength * w);
     }
+#endif
 
 public:
     unsigned int imageW, imageH;
+    float exposure;
+    float apeture;
+    float focalLength;
     float aspectRatio;
     float tanFovxOverTwo;
     glm::vec3 pos;

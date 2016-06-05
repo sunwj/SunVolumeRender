@@ -136,6 +136,7 @@ void TransferFunction::onOpacityTFChanged()
 
     opacityTF->GetTable(0.0, 1.0, TABLE_SIZE, opacityTable);
     size_t j = 3;
+    maxOpacity = -1.f;
     for(size_t i = 0; i < TABLE_SIZE; ++i)
     {
         maxOpacity = fmaxf(maxOpacity, opacityTable[i]);

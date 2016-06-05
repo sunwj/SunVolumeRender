@@ -35,9 +35,11 @@ private:
     void ConfigureCanvas();
     void ConfigureActions();
     void ConfigureLight();
+    void ConfigureCamera();
 
 private slots:
     void onTransferFunctionChanged();
+    void onScatterTimesChanged(double val);
 
     void onEnvLightUOffsetChanged(double u);
     void onEnvLightVOffsetChanged(double v);
@@ -54,6 +56,11 @@ private slots:
     void onAreaLightDistanceChanged(double val);
     void onAreaLightLatitudeChanged(double val);
     void onAreaLightLongitudeChanged(double val);
+
+    void onCameraFOVChanged(double val);
+    void onCameraFocalLengthChanged(double val);
+    void onCameraExposureChaned(double val);
+    void onCameraApetureChanged(double val);
 
     void onFileOpen();
 

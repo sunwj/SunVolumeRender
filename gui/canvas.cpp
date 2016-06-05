@@ -13,8 +13,7 @@ Canvas::Canvas(const QGLFormat &format, QWidget *parent) : QGLWidget(format, par
 
     // render params
     renderParams.SetupHDRBuffer(WIDTH, HEIGHT);
-    renderParams.exposure = 1.f;
-    renderParams.traceDepth = 5;
+    renderParams.traceDepth = 2;
 }
 
 Canvas::~Canvas()
@@ -29,7 +28,7 @@ void Canvas::LoadVolume(std::string filename)
     setup_volume(deviceVolume);
 
     ZoomToExtent();
-    camera.Setup(glm::vec3(0.f, 0.f, eyeDist), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f), fov, WIDTH, HEIGHT);
+    camera.Setup(glm::vec3(0.f, 0.f, eyeDist), glm::vec3(0.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f), fov, apeture, focalLength, exposure, WIDTH, HEIGHT);
     viewMat = glm::lookAt(glm::vec3(0.f, 0.f, eyeDist), glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f));
     UpdateCamera();
 
@@ -101,7 +100,7 @@ void Canvas::mouseMoveEvent(QMouseEvent *e)
     // rotation
     if(e->buttons() & Qt::LeftButton)
     {
-        constexpr float baseDegree = 50.f;
+        constexpr float baseDegree = 100.f;
         viewMat = glm::rotate(viewMat, static_cast<float>(glm::radians(delta.y() * baseDegree)), glm::vec3(1.f, 0.f, 0.f));
         viewMat = glm::rotate(viewMat, static_cast<float>(glm::radians(-delta.x() * baseDegree)), glm::vec3(0.f, 1.f, 0.f));
 
@@ -144,7 +143,7 @@ void Canvas::UpdateCamera()
     auto v = glm::vec3(viewMat[1][0], viewMat[1][1], viewMat[1][2]);
     auto w = glm::vec3(viewMat[2][0], viewMat[2][1], viewMat[2][2]);
     auto pos = w * eyeDist - u * cameraTranslate.x - v * cameraTranslate.y;
-    camera.Setup(pos, u, v, w, 45.f, WIDTH, HEIGHT);
+    camera.Setup(pos, u, v, w, fov, apeture, focalLength, exposure, WIDTH, HEIGHT);
 
     setup_camera(camera);
 }

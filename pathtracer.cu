@@ -113,10 +113,8 @@ __inline__ __device__ glm::vec3 bsdf(const VolumeSample vs, const glm::vec3& wi,
     else if(st == SHANDING_TYPE_BRDF)
     {
         auto normal = glm::normalize(vs.gradient);
-        if(glm::dot(normal, vs.wo) < 0.f)
-            normal = -normal;
 
-        float cosTerm = fmaxf(0.f, glm::dot(wi, normal));
+        float cosTerm = fabsf(glm::dot(wi, normal));
         float ks = schlick_fresnel(1.0f, 2.5f, cosTerm);
         float kd = 1.f - ks;
 
@@ -139,7 +137,7 @@ __inline__ __device__ glm::vec3 estimate_direct_light(const VolumeSample vs, cur
     // randomly choose a single light
     int lightId = num_areaLights * curand_uniform(&rng);
     lightId = lightId < num_areaLights ? lightId : num_areaLights - 1;
-    cudaAreaLight& light = areaLights[lightId];
+    const cudaAreaLight& light = areaLights[lightId];
 
     // sample light
     glm::vec3 lightPos;
@@ -182,7 +180,7 @@ __global__ void render_kernel(const RenderParams renderParams, uint32_t hashedFr
             if(ls.t < t)
             {
                 auto cosTerm = glm::dot(ls.normal, -ray.dir);
-                L += T * ls.radiance * float(M_1_PI) * 0.5f * (cosTerm <= 0.f ? 0.f : 1.f);
+                L += T * ls.radiance * 1000.f * (cosTerm <= 0.f ? 0.f : 1.f);
                 break;
             }
         }
@@ -205,6 +203,7 @@ __global__ void render_kernel(const RenderParams renderParams, uint32_t hashedFr
         if(vs.gradientMagnitude < 1e-3)
         {
             L += T * estimate_direct_light(vs, rng, SHANDING_TYPE_ISOTROPIC);
+            //L += T * glm::vec3(0.1f);
 
             glm::vec3 newDir;
             hg_phase_sample_f(0.f, -ray.dir, &newDir, nullptr, rng);
@@ -220,6 +219,7 @@ __global__ void render_kernel(const RenderParams renderParams, uint32_t hashedFr
                 normal = -normal;
 
             L += T * estimate_direct_light(vs, rng, SHANDING_TYPE_BRDF);
+            //L += T * glm::vec3(0.1f);
 
             auto cosTerm = fmaxf(0.f, glm::dot(vs.wo, normal));
             auto ks = schlick_fresnel(1.f, 2.5f, cosTerm);
@@ -258,7 +258,7 @@ __global__ void hdr_to_ldr(glm::u8vec4* img, const RenderParams renderParams)
     auto idy = blockDim.y * blockIdx.y + threadIdx.y;
     auto offset = idy * WIDTH + idx;
 
-    auto L = reinhard_tone_mapping(renderParams.hdrBuffer[offset], renderParams.exposure);
+    auto L = reinhard_tone_mapping(renderParams.hdrBuffer[offset], camera.exposure);
     img[offset] = glm::u8vec4(L.x * 255, L.y * 255, L.z * 255, 255);
 }
 

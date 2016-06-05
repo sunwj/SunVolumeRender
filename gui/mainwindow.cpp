@@ -13,11 +13,13 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->setupUi(this);
 
     ui->dockWidget->setTitleBarWidget(new QWidget);
+    ui->tabController->setEnabled(false);
 
     ConfigureTransferFunction();
     ConfigureCanvas();
     ConfigureActions();
     ConfigureLight();
+    ConfigureCamera();
 
     // initialize transferfunction on device
     canvas->SetTransferFunction(this->tf->GetCompositeTFTextureObject(), 0.5f);
@@ -77,6 +79,8 @@ void MainWindow::ConfigureCanvas()
     canvas->setMaximumSize(WIDTH, HEIGHT);
 
     ui->centralLayout->addWidget(canvas);
+
+    connect(ui->SliderWidget_scatterTimes, SIGNAL(valueChanged(double)), this, SLOT(onScatterTimesChanged(double)));
 }
 
 void MainWindow::ConfigureActions()
@@ -110,6 +114,14 @@ void MainWindow::ConfigureLight()
     connect(ui->PathLineEdit_EnvMap, SIGNAL(currentPathChanged(const QString&)), this, SLOT(onEnvLightMapChanged(const QString&)));
 }
 
+void MainWindow::ConfigureCamera()
+{
+    connect(ui->SliderWidget_FOV, SIGNAL(valueChanged(double)), this, SLOT(onCameraFOVChanged(double)));
+    connect(ui->SliderWidget_focalLength, SIGNAL(valueChanged(double)), this, SLOT(onCameraFocalLengthChanged(double)));
+    connect(ui->SliderWidget_exposure, SIGNAL(valueChanged(double)), this, SLOT(onCameraExposureChaned(double)));
+    connect(ui->SliderWidget_apeture, SIGNAL(valueChanged(double)), this, SLOT(onCameraApetureChanged(double)));
+}
+
 void MainWindow::onFileOpen()
 {
     QString fileName = "";
@@ -135,6 +147,8 @@ void MainWindow::onFileOpen()
     ui->histogramChart->graph(0)->setData(xAxis, yAxis);
     ui->histogramChart->graph(0)->rescaleAxes();
     ui->histogramChart->replot();
+
+    ui->tabController->setEnabled(true);
 }
 
 void MainWindow::onEnvLightUOffsetChanged(double u)
@@ -187,7 +201,7 @@ void MainWindow::onAddAreaLight()
 
         // initialize and add light parameters to Lights
         cudaAreaLight areaLight;
-        areaLight.Set(cudaDisk(glm::vec3(0.f), glm::vec3(0.f, -1.f, 0.f), 10.f), glm::vec3(1.f), 50.f);
+        areaLight.Set(cudaDisk(glm::vec3(0.f), glm::vec3(0.f, -1.f, 0.f), 10.f), glm::vec3(1.f), 500.f);
         canvas->lights.AddAreaLights(areaLight, glm::vec3(0.f, 0.f, canvas->volumeReader.GetBoundingSphereRadius() * 1.5f + 1.f));
 
         glm::mat4 mat(1.f);
@@ -375,4 +389,29 @@ void MainWindow::onAreaLightLongitudeChanged(double val)
     light->SetNormal(glm::normalize(-pos));
 
     canvas->SetAreaLights();
+}
+
+void MainWindow::onCameraFOVChanged(double val)
+{
+    canvas->SetFOV(val);
+}
+
+void MainWindow::onCameraFocalLengthChanged(double val)
+{
+    canvas->SetFocalLength(val);
+}
+
+void MainWindow::onCameraExposureChaned(double val)
+{
+    canvas->SetExposure(val);
+}
+
+void MainWindow::onCameraApetureChanged(double val)
+{
+    canvas->SetApeture(val);
+}
+
+void MainWindow::onScatterTimesChanged(double val)
+{
+    canvas->SetScatterTimes(val);
 }
