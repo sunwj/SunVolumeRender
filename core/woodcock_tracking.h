@@ -15,13 +15,7 @@
 #include "cuda_volume.h"
 #include "cuda_transfer_function.h"
 
-#define BASE_SAMPLE_STEP_SIZE 0.5f
-
-__inline__ __device__ float opacity_to_sigmat(float opacity)
-{
-    opacity = fminf(opacity, 0.99f);
-    return -logf(1.f - opacity) * BASE_SAMPLE_STEP_SIZE;
-}
+#define BASE_SAMPLE_STEP_SIZE 1.f
 
 __inline__ __device__ float sample_distance(const cudaRay& ray, const cudaVolume& volume, const cudaTransferFunction& tf, curandState& rng)
 {
@@ -32,19 +26,21 @@ __inline__ __device__ float sample_distance(const cudaRay& ray, const cudaVolume
         ray.tMax = tFar;
         auto t = ray.tMin;
 
-        float invSigmaMax = 1.f / opacity_to_sigmat(tf.GetMaxOpacity());
+        float sigmaMax = tf.GetMaxOpacity();
+        float invSigmaMax = 1.f / sigmaMax;
+        float invSigmaMaxSampleInterval = 1.f / (sigmaMax * BASE_SAMPLE_STEP_SIZE);
         while(true)
         {
-            t += -logf(1.f - curand_uniform(&rng)) * invSigmaMax;
+            t += -logf(1.f - curand_uniform(&rng)) * invSigmaMaxSampleInterval;
             if(t > ray.tMax)
                 return -FLT_MAX;
 
             auto ptInWorld = ray.PointOnRay(t);
             auto intensity = volume(ptInWorld);
             auto color_opacity = tf(intensity);
-            auto sigma_t = opacity_to_sigmat(color_opacity.w);
+            auto sigma_t = color_opacity.w;
 
-            if(curand_uniform(&rng) < sigma_t * invSigmaMax)
+            if(curand_uniform(&rng) < sigma_t * invSigmaMax || t > ray.tMax)
                 break;
         }
 
