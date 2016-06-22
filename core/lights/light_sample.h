@@ -62,7 +62,7 @@ __inline__ __device__ glm::vec3 sample_light(const cudaAreaLight& light, const g
     *wi = glm::normalize(shadowVec);
 
     float cosTerm = glm::dot(lightNormal, -(*wi));
-    *pdf = 0.001f * glm::dot(shadowVec, shadowVec) / (fabsf(cosTerm) * light.GetArea());
+    *pdf = glm::dot(shadowVec, shadowVec) / (fabsf(cosTerm) * light.GetArea());
 
     return cosTerm > 0.f ? light.GetRadiance() : glm::vec3(0.f);
 }
