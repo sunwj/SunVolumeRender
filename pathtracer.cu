@@ -21,12 +21,14 @@
 #include "core/woodcock_tracking.h"
 #include "core/transmittance.h"
 #include "core/bsdf/henyey_greenstein.h"
-#include "core/bsdf/phong.h"
-#include "core/bsdf/fresnel.h"
+#include "core/bsdf/lambert.h"
+#include "core/bsdf/microfacet.h"
 #include "core/lights/lights.h"
 #include "core/lights/light_sample.h"
 
 #define PHASE_FUNC_G (0.f)
+#define IOR (2.5f)
+#define ALPHA (0.2f)
 
 // global variables
 __constant__ cudaTransferFunction transferFunction;
@@ -113,14 +115,14 @@ __inline__ __device__ glm::vec3 bsdf(const VolumeSample& vs, const glm::vec3& wi
     else if(st == SHANDING_TYPE_BRDF)
     {
         auto normal = glm::normalize(vs.gradient);
+        normal = glm::dot(vs.wo, normal) < 0.f ? -normal : normal;
 
-        float cosTerm = fabsf(glm::dot(wi, normal));        // for the computation of fresnel value
-        float ks = schlick_fresnel(1.0f, 2.5f, cosTerm);
+        float cosTerm = fmaxf(0.f, glm::dot(wi, normal));
+        float ks = schlick_fresnel(1.0f, IOR, cosTerm);
         float kd = 1.f - ks;
 
-        cosTerm = fabsf(glm::dot(vs.wo, normal));           // cosine fall off value
-        auto diffuse = diffuseColor * (float)M_1_PI;
-        auto specular = glm::vec3(1.f) * phong_brdf_f(vs.wo, wi, normal, 20.f);
+        auto diffuse = diffuseColor * lambert_brdf_f(wi, vs.wo);
+        auto specular = glm::vec3(1.f) * microfacet_brdf_f(wi, vs.wo, normal, IOR, ALPHA);
 
         L = (kd * diffuse + ks * specular) * cosTerm;
     }
@@ -138,26 +140,32 @@ __inline__ __device__ glm::vec3 sample_bsdf(const VolumeSample& vs, glm::vec3* w
     else if(st == SHANDING_TYPE_BRDF)
     {
         auto normal = glm::normalize(vs.gradient);
-        if(glm::dot(normal, vs.wo) < 0.f)
+        auto cosTerm = glm::dot(vs.wo, normal);
+        if(cosTerm < 0.f)
+        {
+            cosTerm = -cosTerm;
             normal = -normal;
-        auto cosTerm = fmaxf(0.f, glm::dot(vs.wo, normal));
+        }
 
-        auto ks = schlick_fresnel(1.f, 2.5f, cosTerm);
+        auto ks = schlick_fresnel(1.f, IOR, cosTerm);
         auto kd = 1.f - ks;
         auto p = 0.25f + 0.5f * ks;
 
         if(curand_uniform(&rng) < p)
         {
-            phong_brdf_sample_f(20.f, normal, vs.wo, wi, pdf, rng);
-            return phong_brdf_f(vs.wo, *wi, normal, 20.f) * glm::vec3(ks / p);
+            microfacet_brdf_sample_f(vs.wo, normal, ALPHA, wi, pdf, rng);
+            auto f = microfacet_brdf_f(*wi, vs.wo, normal, IOR, ALPHA);
+            return glm::vec3(1.f) * f * ks / p;
         }
         else
         {
-            *wi = cosine_weightd_sample_hemisphere(rng, normal);
-            *pdf = fabsf(glm::dot(*wi, normal)) * M_1_PI;
-            return glm::vec3(vs.color_opacity.x, vs.color_opacity.y, vs.color_opacity.z) * float(M_1_PI) * kd / (1.f - p);
+            lambert_brdf_sample_f(vs.wo, normal, wi, pdf, rng);
+            auto f = lambert_brdf_f(*wi, vs.wo);
+            return glm::vec3(vs.color_opacity.x, vs.color_opacity.y, vs.color_opacity.z) * f * kd / (1.f - p);
         }
     }
+
+    return glm::vec3(0.f);
 }
 
 __inline__ __device__ glm::vec3 estimate_direct_light(const VolumeSample vs, curandState& rng, ShadingType st)
@@ -183,6 +191,8 @@ __inline__ __device__ glm::vec3 estimate_direct_light(const VolumeSample vs, cur
         auto Tr = transmittance(vs.ptInWorld, lightPos, volume, transferFunction, rng);
         Li = Tr * num_areaLights * bsdf(vs, wi, st) * Li / pdf;
     }
+    else
+        Li = glm::vec3(0.f);
 
     return Li;
 }
@@ -235,25 +245,19 @@ __global__ void render_kernel(const RenderParams renderParams, uint32_t hashedFr
 
         glm::vec3 wi;
         float pdf = 0.f;
+        ShadingType st;
         if(vs.gradientMagnitude < 1e-3)
-        {
-            L += T * estimate_direct_light(vs, rng, SHANDING_TYPE_ISOTROPIC);
-
-            auto f = sample_bsdf(vs, &wi, &pdf, rng, SHANDING_TYPE_ISOTROPIC);
-            float cosTerm = fabsf(glm::dot(glm::normalize(vs.gradient), wi));
-            if(fmaxf(f.x, fmaxf(f.y, f.z)) > 0.f && pdf > 0.f)
-                T *= f * cosTerm / pdf;
-        }
+            st = SHANDING_TYPE_ISOTROPIC;
         else
-        {
-            L += T * estimate_direct_light(vs, rng, SHANDING_TYPE_BRDF);
+            st = SHANDING_TYPE_BRDF;
 
-            auto f = sample_bsdf(vs, &wi, &pdf, rng, SHANDING_TYPE_BRDF);
-            float cosTerm = fabsf(glm::dot(glm::normalize(vs.gradient), wi));
-            if(fmaxf(f.x, fmaxf(f.y, f.z)) > 0.f && pdf > 0.f)
-                T *= f * cosTerm / pdf;
+        L += T * estimate_direct_light(vs, rng, st);
 
-        }
+        auto f = sample_bsdf(vs, &wi, &pdf, rng, st);
+        float cosTerm = fmaxf(0.f, glm::dot(glm::normalize(vs.gradient), wi));
+        if(fmaxf(f.x, fmaxf(f.y, f.z)) > 0.f && pdf > 0.f)
+            T *= f * cosTerm / pdf;
+
         ray.orig = vs.ptInWorld;
         ray.dir = wi;
 
