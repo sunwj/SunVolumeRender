@@ -31,6 +31,7 @@ public:
     void CreateDeviceVolume(cudaVolume* volume);
     glm::vec3 GetVolumeSize();
     float GetBoundingSphereRadius();
+    float GetElementBoundingSphereRadius() const;
 
 private:
     void ClearHost();

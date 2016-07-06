@@ -9,12 +9,12 @@
 #include <glm/glm.hpp>
 
 #include "core/cuda_camera.h"
-#include "geometry/cuda_bbox.h"
+#include "core/geometry/cuda_bbox.h"
 #include "core/cuda_transfer_function.h"
 #include "core/render_parameters.h"
 
 // kernel
-extern "C" void rendering(glm::u8vec4* img, const RenderParams& renderParams);
+extern "C" void render_pathtracer(glm::u8vec4* img, const RenderParams& renderParams);
 
 // setup functions
 extern "C" void setup_volume(const cudaVolume& vol);

@@ -82,8 +82,6 @@ __inline__ __device__ glm::vec3 sample_GGX(const glm::vec3& normal, float alpha,
 {
     cudaONB onb(normal);
     float phi = 2.f * float(M_PI) * curand_uniform(&rng);
-    float sinPhi = sinf(phi);
-    float cosPhi = cosf(phi);
 
     float u = curand_uniform(&rng);
     float tanTheta = alpha * sqrtf(u) / sqrtf(1.f - u);

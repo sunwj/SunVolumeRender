@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QLabel>
+#include <QButtonGroup>
 
 #include <vtkVolumeProperty.h>
 
@@ -36,6 +37,7 @@ private:
     void ConfigureActions();
     void ConfigureLight();
     void ConfigureCamera();
+    void ConfigureRenderMode();
 
 private slots:
     void onTransferFunctionChanged();
@@ -64,12 +66,15 @@ private slots:
 
     void onFileOpen();
 
+    void onRenderModeChanged();
+
 
 private:
     Ui::MainWindow *ui;
 
     TransferFunction* tf;
     Canvas* canvas;
+    QButtonGroup* renderModeGroup;
 };
 
 #endif // MAINWINDOW_H

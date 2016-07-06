@@ -192,3 +192,8 @@ float VolumeReader::GetBoundingSphereRadius()
     auto size = GetVolumeSize();
     return glm::length(size) * 0.5f;
 }
+
+float VolumeReader::GetElementBoundingSphereRadius() const
+{
+    return glm::length(spacing) * 0.5f;
+}

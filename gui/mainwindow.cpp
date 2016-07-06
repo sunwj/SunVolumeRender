@@ -20,6 +20,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ConfigureActions();
     ConfigureLight();
     ConfigureCamera();
+    ConfigureRenderMode();
 
     // initialize transferfunction on device
     canvas->SetTransferFunction(this->tf->GetCompositeTFTextureObject(), 0.5f);
@@ -29,6 +30,16 @@ MainWindow::~MainWindow()
 {
     delete ui;
     exit(0);
+}
+
+void MainWindow::ConfigureRenderMode()
+{
+    renderModeGroup = new QButtonGroup(this);
+    renderModeGroup->addButton(ui->radioButton_Pathtracer, 0);
+    renderModeGroup->addButton(ui->radioButton_Raycasting, 1);
+
+    connect(ui->radioButton_Pathtracer, SIGNAL(clicked()), this, SLOT(onRenderModeChanged()));
+    connect(ui->radioButton_Raycasting, SIGNAL(clicked()), this, SLOT(onRenderModeChanged()));
 }
 
 void MainWindow::ConfigureTransferFunction()
@@ -414,4 +425,20 @@ void MainWindow::onCameraApetureChanged(double val)
 void MainWindow::onScatterTimesChanged(double val)
 {
     canvas->SetScatterTimes(val);
+}
+
+void MainWindow::onRenderModeChanged()
+{
+    auto id = renderModeGroup->checkedId();
+    switch(id)
+    {
+        case 0:
+            canvas->SetRenderMode(RENDER_MODE_PATHTRACER);
+            break;
+        case 1:
+            canvas->SetRenderMode(RENDER_MODE_RAYCASTING);
+            break;
+        default:
+            break;
+    }
 }

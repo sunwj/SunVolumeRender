@@ -21,10 +21,13 @@
 
 #include "common.h"
 #include "utils/helper_cuda.h"
-#include "core/pathtracer.h"
+#include "pathtracer.h"
+#include "raycasting.h"
 #include "core/cuda_transfer_function.h"
 #include "core/cuda_volume.h"
 #include "core/render_parameters.h"
+
+enum RenderMode {RENDER_MODE_PATHTRACER, RENDER_MODE_RAYCASTING};
 
 class Canvas : public QGLWidget
 {
@@ -39,14 +42,34 @@ public:
         setup_transferfunction(transferFunction);
         ReStartRender();
     };
-    void ReStartRender() {renderParams.frameNo = 0;}
     void LoadVolume(std::string filename);
     void StartTimer() {timerId = this->startTimer(0);}
     void KillTimer() {this->killTimer(timerId);}
 
+    void ReStartRender()
+    {
+        updateGL();
+        renderParams.frameNo = 0;
+    }
+
     void SetScatterTimes(double val)
     {
         renderParams.traceDepth = val;
+        ReStartRender();
+    }
+
+    void SetRenderMode(RenderMode mode)
+    {
+        if(mode == RENDER_MODE_PATHTRACER)
+        {
+            StartTimer();
+        }
+        else if(mode == RENDER_MODE_RAYCASTING)
+        {
+            KillTimer();
+        }
+
+        renderMode = mode;
         ReStartRender();
     }
 
@@ -164,6 +187,8 @@ private:
     cudaCamera camera;
     cudaVolume deviceVolume;
     cudaTransferFunction transferFunction;
+
+    RenderMode renderMode = RENDER_MODE_RAYCASTING;
 };
 
 

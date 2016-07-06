@@ -81,6 +81,18 @@ public:
         ray->orig = pos + apetureSample.x * u + apetureSample.y * v;
         ray->dir = glm::normalize((nx - apetureSample.x) * u + (ny - apetureSample.y) * v - focalLength * w);
     }
+
+    __device__ void GenerateRay(unsigned int x, unsigned int y, cudaRay* ray) const
+    {
+        float nx = 2.f * ((x + 0.5f) / (imageW - 1.f)) - 1.f;
+        float ny = 2.f * ((y + 0.5f) / (imageH - 1.f)) - 1.f;
+
+        nx = nx * aspectRatio * tanFovxOverTwo;
+        ny = ny * tanFovxOverTwo;
+
+        ray->orig = pos;
+        ray->dir = normalize(nx * u + ny * v - w);
+    }
 #endif
 
 public:

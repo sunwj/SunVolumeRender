@@ -8,7 +8,7 @@ Canvas::Canvas(const QGLFormat &format, QWidget *parent) : QGLWidget(format, par
 {
     // lights
     lights.SetEnvironmentLight("LA_Downtown_Helipad_GoldenHour_Env.hdr");
-    lights.SetEnvironmentLightIntensity(1.f);
+    lights.SetEnvironmentLightIntensity(0.f);
     setup_env_lights(lights.environmentLight);
 
     // render params
@@ -33,7 +33,6 @@ void Canvas::LoadVolume(std::string filename)
     UpdateCamera();
 
     ready = true;
-    StartTimer();
 }
 
 void Canvas::initializeGL()
@@ -66,7 +65,31 @@ void Canvas::paintGL()
     checkCudaErrors(cudaGraphicsMapResources(1, &resource, 0));
     checkCudaErrors(cudaGraphicsResourceGetMappedPointer((void**)&img, &size, resource));
 
-    rendering(img, renderParams);
+    if(renderMode == RENDER_MODE_RAYCASTING)
+    {
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        glBegin(GL_QUADS);
+        glColor4f(0.4745f, 0.9294f, 0.8901f, 1.f);
+        glVertex2f(1.f, 1.f);
+
+        glColor4f(0.4745f, 0.9294f, 0.8901f, 1.f);
+        glVertex2f(-1.f, 1.f);
+
+        glColor4f(0.9490f, 0.9647f, 0.9803f, 1.f);
+        glVertex2f(-1.f, -1.f);
+
+        glColor4f(0.9490f, 0.9647f, 0.9803f, 1.f);
+        glVertex2f(1.f, -1.f);
+        glEnd();
+
+        render_raycasting(img, volumeReader.GetElementBoundingSphereRadius());
+    }
+    else
+    {
+        render_pathtracer(img, renderParams);
+    }
     checkCudaErrors(cudaDeviceSynchronize());
 
     checkCudaErrors(cudaGraphicsUnmapResources(1, &resource, 0));
@@ -74,6 +97,8 @@ void Canvas::paintGL()
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo);
     glDrawPixels(WIDTH, HEIGHT, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+
+    glDisable(GL_BLEND);
 
     renderParams.frameNo++;
 }

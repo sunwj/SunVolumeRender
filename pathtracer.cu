@@ -2,9 +2,9 @@
 // Created by 孙万捷 on 16/3/4.
 //
 
-#define GLM_FORCE_NO_CTOR_INIT
 #include <stdio.h>
 
+#define GLM_FORCE_NO_CTOR_INIT
 #define GLM_FORCE_INLINE
 #include <glm/glm.hpp>
 
@@ -28,7 +28,7 @@
 
 #define PHASE_FUNC_G (0.f)
 #define IOR (2.5f)
-#define ALPHA (0.2f)
+#define ALPHA (0.15f)
 
 // global variables
 __constant__ cudaTransferFunction transferFunction;
@@ -197,7 +197,7 @@ __inline__ __device__ glm::vec3 estimate_direct_light(const VolumeSample vs, cur
     return Li;
 }
 
-__global__ void render_kernel(const RenderParams renderParams, uint32_t hashedFrameNo)
+__global__ void kernel_pathtracer(const RenderParams renderParams, uint32_t hashedFrameNo)
 {
     auto idx = blockDim.x * blockIdx.x + threadIdx.x;
     auto idy = blockDim.y * blockIdx.y + threadIdx.y;
@@ -254,7 +254,7 @@ __global__ void render_kernel(const RenderParams renderParams, uint32_t hashedFr
         L += T * estimate_direct_light(vs, rng, st);
 
         auto f = sample_bsdf(vs, &wi, &pdf, rng, st);
-        float cosTerm = fmaxf(0.f, glm::dot(glm::normalize(vs.gradient), wi));
+        float cosTerm = fabsf(glm::dot(glm::normalize(vs.gradient), wi));
         if(fmaxf(f.x, fmaxf(f.y, f.z)) > 0.f && pdf > 0.f)
             T *= f * cosTerm / pdf;
 
@@ -281,7 +281,7 @@ __global__ void hdr_to_ldr(glm::u8vec4* img, const RenderParams renderParams)
     img[offset] = glm::u8vec4(L.x * 255, L.y * 255, L.z * 255, 255);
 }
 
-extern "C" void rendering(glm::u8vec4* img, const RenderParams& renderParams)
+extern "C" void render_pathtracer(glm::u8vec4* img, const RenderParams& renderParams)
 {
     dim3 blockSize(16, 16);
     dim3 gridSize(WIDTH / blockSize.x, HEIGHT / blockSize.y);
@@ -291,6 +291,69 @@ extern "C" void rendering(glm::u8vec4* img, const RenderParams& renderParams)
         clear_hdr_buffer<<<gridSize, blockSize>>>(renderParams.hdrBuffer);
     }
 
-    render_kernel<<<gridSize, blockSize>>>(renderParams, wangHash(renderParams.frameNo));
+    kernel_pathtracer<<<gridSize, blockSize>>>(renderParams, wangHash(renderParams.frameNo));
     hdr_to_ldr<<<gridSize, blockSize>>>(img, renderParams);
+}
+
+// front to back composite
+__global__ void kernel_raycasting(glm::u8vec4* img, float stepSize)
+{
+    auto idx = blockDim.x * blockIdx.x + threadIdx.x;
+    auto idy = blockDim.y * blockIdx.y + threadIdx.y;
+    auto offset = idy * WIDTH + idx;
+
+    cudaRay ray;
+    camera.GenerateRay(idx, idy, &ray);
+
+    glm::vec4 L = glm::vec4(0.f);
+
+    float tNear, tFar, t;
+    if(volume.Intersect(ray, &tNear, &tFar))
+    {
+        t = tNear;
+        while(t <= tFar)
+        {
+            auto ptInWorld = ray.PointOnRay(t);
+            auto intensity = volume(ptInWorld);
+            auto color_opacity = transferFunction(intensity);
+
+            // apply lighting
+            auto gradient = volume.Gradient_CentralDiff(ptInWorld);
+            auto gradientMagnitude = sqrtf(glm::dot(gradient, gradient));
+            float cosTerm = 1.f;
+            float specularTerm = 0.f;
+            if(gradientMagnitude > 1e-3)
+            {
+                auto normal = glm::normalize(gradient);
+                auto lightDir = glm::normalize(camera.pos - ptInWorld);
+                cosTerm = fabsf(glm::dot(normal, lightDir));
+
+                specularTerm = powf(cosTerm, 30.f);
+            }
+
+            color_opacity.x = color_opacity.x * color_opacity.w * cosTerm * 0.8f + color_opacity.w * specularTerm * 0.2f;
+            color_opacity.y = color_opacity.y * color_opacity.w * cosTerm * 0.8f + color_opacity.w * specularTerm * 0.2f;
+            color_opacity.z = color_opacity.z * color_opacity.w * cosTerm * 0.8f + color_opacity.w * specularTerm * 0.2f;
+
+            L += (1.f - L.w) * color_opacity;
+
+            if(L.w > 0.95f) break;
+
+            t += stepSize * 0.5f;
+        }
+
+    }
+
+    L.x = fminf(L.x, 1.f);
+    L.y = fminf(L.y, 1.f);
+    L.z = fminf(L.z, 1.f);
+    img[offset] = glm::u8vec4(L.x * 255, L.y * 255, L.z * 255, 255 * L.w);
+}
+
+extern "C" void render_raycasting(glm::u8vec4* img, float stepSize)
+{
+    dim3 blockSize(16, 16);
+    dim3 gridSize(WIDTH / blockSize.x, HEIGHT / blockSize.y);
+
+    kernel_raycasting<<<gridSize, blockSize>>>(img, stepSize);
 }
