@@ -7,8 +7,8 @@
 Canvas::Canvas(const QGLFormat &format, QWidget *parent) : QGLWidget(format, parent)
 {
     // lights
-    lights.SetEnvironmentLight("LA_Downtown_Helipad_GoldenHour_Env.hdr");
-    lights.SetEnvironmentLightIntensity(0.f);
+    lights.SetEnvionmentLight(glm::vec3(1.f));
+    lights.SetEnvironmentLightIntensity(0.5f);
     setup_env_lights(lights.environmentLight);
 
     // render params

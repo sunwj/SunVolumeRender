@@ -56,7 +56,7 @@ __inline__ __device__ float microfacet_brdf_f(const glm::vec3& wi, const glm::ve
 
     //else
     auto wh = glm::normalize(wi + wo);
-    auto fresnelTerm = schlick_fresnel(1.f, ior, fmaxf(0.f, glm::dot(wh, wi)));
+    auto fresnelTerm = schlick_fresnel(1.f, ior, fmaxf(0.f, glm::dot(wh, wo)));
     auto geometryTerm = geometry_cook_torrance(wi, wo, normal, wh);
 #ifdef DISTRIBUTION_BECKMANN
     auto D = beckmann_distribution(normal, wh, alpha);
