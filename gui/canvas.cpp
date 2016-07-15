@@ -25,6 +25,7 @@ void Canvas::LoadVolume(std::string filename)
 {
     volumeReader.Read(filename);
     volumeReader.CreateDeviceVolume(&deviceVolume);
+    deviceVolume.SetClipPlane(glm::vec2(-1.f, 1.f), glm::vec2(-1.f, 1.f), glm::vec2(-1.f, 1.f));
     setup_volume(deviceVolume);
 
     ZoomToExtent();

@@ -266,7 +266,7 @@
             <property name="geometry">
              <rect>
               <x>0</x>
-              <y>-139</y>
+              <y>0</y>
               <width>363</width>
               <height>689</height>
              </rect>
@@ -714,6 +714,136 @@
          </item>
         </layout>
        </widget>
+       <widget class="QWidget" name="tab_2">
+        <attribute name="icon">
+         <iconset resource="../resources/images.qrc">
+          <normaloff>:/icons/cut_scissor_scissors_32px_4093_easyicon.net.png</normaloff>:/icons/cut_scissor_scissors_32px_4093_easyicon.net.png</iconset>
+        </attribute>
+        <attribute name="title">
+         <string>Clip Plane</string>
+        </attribute>
+        <layout class="QVBoxLayout" name="verticalLayout_11">
+         <item>
+          <widget class="QScrollArea" name="scrollArea_4">
+           <property name="widgetResizable">
+            <bool>true</bool>
+           </property>
+           <widget class="QWidget" name="scrollAreaWidgetContents_4">
+            <property name="geometry">
+             <rect>
+              <x>0</x>
+              <y>0</y>
+              <width>378</width>
+              <height>550</height>
+             </rect>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_12">
+             <item>
+              <widget class="ctkCollapsibleGroupBox" name="CollapsibleGroupBox_7">
+               <property name="title">
+                <string>Clip range</string>
+               </property>
+               <layout class="QGridLayout" name="gridLayout_6">
+                <item row="1" column="1">
+                 <widget class="ctkDoubleRangeSlider" name="DoubleRangeSlider_YClip">
+                  <property name="minimum">
+                   <double>-1.000000000000000</double>
+                  </property>
+                  <property name="maximum">
+                   <double>1.000000000000000</double>
+                  </property>
+                  <property name="singleStep">
+                   <double>0.001000000000000</double>
+                  </property>
+                  <property name="minimumValue">
+                   <double>-1.000000000000000</double>
+                  </property>
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="0">
+                 <widget class="QLabel" name="label_17">
+                  <property name="text">
+                   <string>X</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="1">
+                 <widget class="ctkDoubleRangeSlider" name="DoubleRangeSlider_XClip">
+                  <property name="minimum">
+                   <double>-1.000000000000000</double>
+                  </property>
+                  <property name="maximum">
+                   <double>1.000000000000000</double>
+                  </property>
+                  <property name="singleStep">
+                   <double>0.001000000000000</double>
+                  </property>
+                  <property name="minimumValue">
+                   <double>-1.000000000000000</double>
+                  </property>
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="1">
+                 <widget class="ctkDoubleRangeSlider" name="DoubleRangeSlider_ZClip">
+                  <property name="minimum">
+                   <double>-1.000000000000000</double>
+                  </property>
+                  <property name="maximum">
+                   <double>1.000000000000000</double>
+                  </property>
+                  <property name="singleStep">
+                   <double>0.001000000000000</double>
+                  </property>
+                  <property name="minimumValue">
+                   <double>-1.000000000000000</double>
+                  </property>
+                  <property name="orientation">
+                   <enum>Qt::Horizontal</enum>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QLabel" name="label_18">
+                  <property name="text">
+                   <string>Y</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="0">
+                 <widget class="QLabel" name="label_19">
+                  <property name="text">
+                   <string>Z</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </widget>
+             </item>
+             <item>
+              <spacer name="verticalSpacer_4">
+               <property name="orientation">
+                <enum>Qt::Vertical</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>20</width>
+                 <height>40</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </widget>
+          </widget>
+         </item>
+        </layout>
+       </widget>
       </widget>
      </item>
     </layout>
@@ -749,6 +879,11 @@
    <class>ctkColorPickerButton</class>
    <extends>QPushButton</extends>
    <header>ctkColorPickerButton.h</header>
+  </customwidget>
+  <customwidget>
+   <class>ctkDoubleRangeSlider</class>
+   <extends>QWidget</extends>
+   <header>ctkDoubleRangeSlider.h</header>
   </customwidget>
   <customwidget>
    <class>ctkPathLineEdit</class>

@@ -21,6 +21,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ConfigureLight();
     ConfigureCamera();
     ConfigureRenderMode();
+    ConfigureClipPlane();
 
     // initialize transferfunction on device
     canvas->SetTransferFunction(this->tf->GetCompositeTFTextureObject(), 0.5f);
@@ -131,6 +132,13 @@ void MainWindow::ConfigureCamera()
     connect(ui->SliderWidget_focalLength, SIGNAL(valueChanged(double)), this, SLOT(onCameraFocalLengthChanged(double)));
     connect(ui->SliderWidget_exposure, SIGNAL(valueChanged(double)), this, SLOT(onCameraExposureChaned(double)));
     connect(ui->SliderWidget_apeture, SIGNAL(valueChanged(double)), this, SLOT(onCameraApetureChanged(double)));
+}
+
+void MainWindow::ConfigureClipPlane()
+{
+    connect(ui->DoubleRangeSlider_XClip, SIGNAL(positionsChanged(double, double)), this, SLOT(onXClipChanged(double, double)));
+    connect(ui->DoubleRangeSlider_YClip, SIGNAL(positionsChanged(double, double)), this, SLOT(onYClipChanged(double, double)));
+    connect(ui->DoubleRangeSlider_ZClip, SIGNAL(positionsChanged(double, double)), this, SLOT(onZClipChanged(double, double)));
 }
 
 void MainWindow::onFileOpen()
@@ -441,4 +449,19 @@ void MainWindow::onRenderModeChanged()
         default:
             break;
     }
+}
+
+void MainWindow::onXClipChanged(double min, double max)
+{
+    canvas->SetXClipPlane(min, max);
+}
+
+void MainWindow::onYClipChanged(double min, double max)
+{
+    canvas->SetYClipPlane(min, max);
+}
+
+void MainWindow::onZClipChanged(double min, double max)
+{
+    canvas->SetZClipPlane(min, max);
 }

@@ -20,7 +20,7 @@ __inline__ __device__ float lambert_brdf_f(const glm::vec3& wi, const glm::vec3&
 __inline__ __device__ void lambert_brdf_sample_f(const glm::vec3& wo, const glm::vec3& normal, glm::vec3* wi, float* pdf, curandState& rng)
 {
     *wi = cosine_weightd_sample_hemisphere(rng, normal);
-    *pdf = glm::dot(*wi, normal) / float(M_PI);
+    *pdf = fabsf(glm::dot(*wi, normal)) / float(M_PI);
 }
 
 #endif //SUNVOLUMERENDER_LAMBERT_H

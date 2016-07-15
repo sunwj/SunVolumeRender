@@ -23,6 +23,17 @@ public:
         this->tex = tex;
     }
 
+    __host__ __device__ void SetClipPlane(const glm::vec2& x_clip, const glm::vec2& y_clip, const glm::vec2& z_clip)
+    {
+        this->x_clip = x_clip;
+        this->y_clip = y_clip;
+        this->z_clip = z_clip;
+    }
+
+    __host__ __device__ void SetXClipPlane(const glm::vec2& clip) {x_clip = clip;}
+    __host__ __device__ void SetYClipPlane(const glm::vec2& clip) {y_clip = clip;}
+    __host__ __device__ void SetZClipPlane(const glm::vec2& clip) {z_clip = clip;}
+
     __device__ float operator ()(const glm::vec3& pointInWorld) const
     {
         return GetIntensity(pointInWorld);
@@ -35,7 +46,7 @@ public:
 
     __device__ bool Intersect(const cudaRay& ray, float* tNear, float* tFar) const
     {
-        return bbox.Intersect(ray, tNear, tFar);
+        return bbox.Intersect(ray, tNear, tFar, x_clip, y_clip, z_clip);
     }
 
     __device__ glm::vec3 Gradient_CentralDiff(const glm::vec3& pointInWorld) const
@@ -92,6 +103,9 @@ private:
     cudaTextureObject_t tex;
     glm::vec3 spacing;
     glm::vec3 invSpacing;
+    glm::vec2 x_clip;
+    glm::vec2 y_clip;
+    glm::vec2 z_clip;
 };
 
 struct VolumeSample

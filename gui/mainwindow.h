@@ -38,6 +38,7 @@ private:
     void ConfigureLight();
     void ConfigureCamera();
     void ConfigureRenderMode();
+    void ConfigureClipPlane();
 
 private slots:
     void onTransferFunctionChanged();
@@ -67,6 +68,10 @@ private slots:
     void onFileOpen();
 
     void onRenderModeChanged();
+
+    void onXClipChanged(double min, double max);
+    void onYClipChanged(double min, double max);
+    void onZClipChanged(double min, double max);
 
 
 private:

@@ -136,6 +136,28 @@ public:
         UpdateCamera();
     }
 
+    // clip plane
+    void SetXClipPlane(double min, double max)
+    {
+        deviceVolume.SetXClipPlane(glm::vec2(float(min), float(max)));
+        setup_volume(deviceVolume);
+        ReStartRender();
+    }
+
+    void SetYClipPlane(double min, double max)
+    {
+        deviceVolume.SetYClipPlane(glm::vec2(float(min), float(max)));
+        setup_volume(deviceVolume);
+        ReStartRender();
+    }
+
+    void SetZClipPlane(double min, double max)
+    {
+        deviceVolume.SetZClipPlane(glm::vec2(float(min), float(max)));
+        setup_volume(deviceVolume);
+        ReStartRender();
+    }
+
 protected:
     //opengl
     void initializeGL();

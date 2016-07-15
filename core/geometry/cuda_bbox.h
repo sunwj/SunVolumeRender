@@ -30,11 +30,16 @@ public:
         invSize = 1.f / (vmax - vmin);
     }
 
-    __device__ bool Intersect(const cudaRay& ray, float* tNear, float* tFar) const
+    __device__ bool Intersect(const cudaRay& ray, float* tNear, float* tFar, const glm::vec2& x_clip, const glm::vec2& y_clip, const glm::vec2& z_clip) const
     {
         auto invDir = 1.f / ray.dir;
-        auto tbot = invDir * (vmin - ray.orig);
-        auto ttop = invDir * (vmax - ray.orig);
+
+        // compute visible box range after clip
+        auto clip_vmin = vmin * glm::vec3(-x_clip[0], -y_clip[0], -z_clip[0]);
+        auto clip_vmax = vmax * glm::vec3(x_clip[1], y_clip[1], z_clip[1]);
+
+        auto tbot = invDir * (clip_vmin - ray.orig);
+        auto ttop = invDir * (clip_vmax - ray.orig);
 
         auto tmin = glm::min(tbot, ttop);
         auto tmax = glm::max(tbot, ttop);

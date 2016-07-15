@@ -135,7 +135,7 @@ __inline__ __device__ glm::vec3 sample_bsdf(const VolumeSample& vs, glm::vec3* w
     if(st == SHANDING_TYPE_ISOTROPIC)
     {
         hg_phase_sample_f(PHASE_FUNC_G, vs.wo, wi, pdf, rng);
-        return glm::vec3(vs.color_opacity);
+        return glm::vec3(vs.color_opacity) * hg_phase_f(vs.wo, *wi);
     }
     else if(st == SHANDING_TYPE_BRDF)
     {
@@ -230,7 +230,7 @@ __global__ void kernel_pathtracer(const RenderParams renderParams, uint32_t hash
 
         if(t < 0.f)
         {
-            L += T * envLight.GetEnvRadiance(ray.dir);
+            //L += T * envLight.GetEnvRadiance(ray.dir);
             break;
         }
 
@@ -256,7 +256,12 @@ __global__ void kernel_pathtracer(const RenderParams renderParams, uint32_t hash
         auto f = sample_bsdf(vs, &wi, &pdf, rng, st);
         float cosTerm = fabsf(glm::dot(glm::normalize(vs.gradient), wi));
         if(fmaxf(f.x, fmaxf(f.y, f.z)) > 0.f && pdf > 0.f)
-            T *= f * cosTerm / pdf;
+        {
+            if(st == SHANDING_TYPE_ISOTROPIC)
+                T *= f / pdf;
+            else
+                T *= f * cosTerm / pdf;
+        }
 
         ray.orig = vs.ptInWorld;
         ray.dir = wi;
