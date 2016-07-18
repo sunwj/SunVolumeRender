@@ -72,6 +72,8 @@ void MainWindow::ConfigureTransferFunction()
     ui->colorTransferFunc->view()->setAxesToChartBounds();
 
     connect(tf, SIGNAL(Changed()), this, SLOT(onTransferFunctionChanged()));
+
+    connect(ui->SliderWidget_DensityScale, SIGNAL(valueChanged(double)), this, SLOT(onDensityScaleChanged(double)));
 }
 
 void MainWindow::onTransferFunctionChanged()
@@ -464,4 +466,9 @@ void MainWindow::onYClipChanged(double min, double max)
 void MainWindow::onZClipChanged(double min, double max)
 {
     canvas->SetZClipPlane(min, max);
+}
+
+void MainWindow::onDensityScaleChanged(double s)
+{
+    canvas->SetDensityScale(s);
 }

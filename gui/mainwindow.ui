@@ -110,9 +110,9 @@
             <property name="geometry">
              <rect>
               <x>0</x>
-              <y>0</y>
+              <y>-144</y>
               <width>363</width>
-              <height>694</height>
+              <height>730</height>
              </rect>
             </property>
             <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -179,6 +179,30 @@
                 <string>Transfer Function</string>
                </property>
                <layout class="QVBoxLayout" name="verticalLayout_4">
+                <item>
+                 <layout class="QHBoxLayout" name="horizontalLayout_3">
+                  <item>
+                   <widget class="QLabel" name="label_20">
+                    <property name="text">
+                     <string>Density scale</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="ctkSliderWidget" name="SliderWidget_DensityScale">
+                    <property name="decimals">
+                     <number>3</number>
+                    </property>
+                    <property name="singleStep">
+                     <double>0.001000000000000</double>
+                    </property>
+                    <property name="value">
+                     <double>1.000000000000000</double>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </item>
                 <item>
                  <widget class="ctkVTKScalarsToColorsWidget" name="opacityTransferFunc">
                   <property name="minimumSize">

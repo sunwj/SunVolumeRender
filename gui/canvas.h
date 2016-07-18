@@ -36,12 +36,6 @@ public:
     explicit Canvas(const QGLFormat& format, QWidget* parent = 0);
     virtual ~Canvas();
 
-    void SetTransferFunction(const cudaTextureObject_t& tex, float maxOpacity)
-    {
-        transferFunction.Set(tex, maxOpacity);
-        setup_transferfunction(transferFunction);
-        ReStartRender();
-    };
     void LoadVolume(std::string filename);
     void StartTimer() {timerId = this->startTimer(0);}
     void KillTimer() {this->killTimer(timerId);}
@@ -50,6 +44,20 @@ public:
     {
         updateGL();
         renderParams.frameNo = 0;
+    }
+
+    void SetTransferFunction(const cudaTextureObject_t& tex, float maxOpacity)
+    {
+        transferFunction.Set(tex, maxOpacity);
+        setup_transferfunction(transferFunction);
+        ReStartRender();
+    }
+
+    void SetDensityScale(double s)
+    {
+        deviceVolume.SetDensityScale(s);
+        setup_volume(deviceVolume);
+        ReStartRender();
     }
 
     void SetScatterTimes(double val)

@@ -45,7 +45,7 @@ set(HOST_SOURCES main.cpp
         core/VolumeReader.cpp
         core/lights/lights.cpp gui/AddAreaLightDialog.cpp gui/AddAreaLightDialog.h)
 
-set(DEVICE_SOURCES pathtracer.cu)
+set(DEVICE_SOURCES pathtracer.cu raycasting.cu)
 
 cuda_compile(DEVICE_OBJS ${DEVICE_SOURCES})
 

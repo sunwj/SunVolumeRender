@@ -34,6 +34,8 @@ public:
     __host__ __device__ void SetYClipPlane(const glm::vec2& clip) {y_clip = clip;}
     __host__ __device__ void SetZClipPlane(const glm::vec2& clip) {z_clip = clip;}
 
+    __host__ __device__ void SetDensityScale(float s = 1.f) {densityScale = s;}
+
     __device__ float operator ()(const glm::vec3& pointInWorld) const
     {
         return GetIntensity(pointInWorld);
@@ -83,7 +85,7 @@ private:
     {
 #ifdef __CUDACC__
         auto texCoord = GetNormalizedTexCoord(pointInWorld);
-        return tex3D<float>(tex, texCoord.x, texCoord.y, texCoord.z);
+        return tex3D<float>(tex, texCoord.x, texCoord.y, texCoord.z) * densityScale;
 #else
         return 0.f;
 #endif
@@ -101,6 +103,7 @@ private:
 private:
     cudaBBox bbox;
     cudaTextureObject_t tex;
+    float densityScale;
     glm::vec3 spacing;
     glm::vec3 invSpacing;
     glm::vec2 x_clip;

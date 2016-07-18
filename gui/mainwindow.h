@@ -42,6 +42,7 @@ private:
 
 private slots:
     void onTransferFunctionChanged();
+    void onDensityScaleChanged(double s);
     void onScatterTimesChanged(double val);
 
     void onEnvLightUOffsetChanged(double u);

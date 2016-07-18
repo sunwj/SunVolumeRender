@@ -26,6 +26,7 @@ void Canvas::LoadVolume(std::string filename)
     volumeReader.Read(filename);
     volumeReader.CreateDeviceVolume(&deviceVolume);
     deviceVolume.SetClipPlane(glm::vec2(-1.f, 1.f), glm::vec2(-1.f, 1.f), glm::vec2(-1.f, 1.f));
+    deviceVolume.SetDensityScale(1.f);
     setup_volume(deviceVolume);
 
     ZoomToExtent();
@@ -85,7 +86,7 @@ void Canvas::paintGL()
         glVertex2f(1.f, -1.f);
         glEnd();
 
-        render_raycasting(img, volumeReader.GetElementBoundingSphereRadius());
+        render_raycasting(img, deviceVolume, transferFunction, camera, volumeReader.GetElementBoundingSphereRadius());
     }
     else
     {
