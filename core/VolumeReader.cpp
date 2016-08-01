@@ -67,13 +67,14 @@ void VolumeReader::Read(std::string filename)
     histogram.resize(histDims[0]);
     memcpy(&histogram[0], hist->GetOutput()->GetScalarPointer(), sizeof(uint32_t) * histDims[0]);
 
-    //auto imageGradientMagnitude = vtkSmartPointer<vtkImageGradientMagnitude>::New();
-    //imageGradientMagnitude->SetDimensionality(3);
-    //imageGradientMagnitude->SetInput(imageCast->GetOutput());
-    //imageGradientMagnitude->Update();
-    //auto magData = imageGradientMagnitude->GetOutput();
-    //auto magRange = magData->GetScalarRange();
-    //maxMagnitude = magRange[2];
+    auto imageGradientMagnitude = vtkSmartPointer<vtkImageGradientMagnitude>::New();
+    imageGradientMagnitude->SetDimensionality(3);
+    imageGradientMagnitude->SetInput(imageCast->GetOutput());
+    imageGradientMagnitude->Update();
+    auto magData = imageGradientMagnitude->GetOutput();
+    auto magRange = magData->GetScalarRange();
+    maxMagnitude = magRange[1];
+    std::cout<<maxMagnitude<<std::endl;
 
     //auto ptr = reinterpret_cast<unsigned short*>(data) + 60 * 512 * 512;
     //unsigned char* tmp = new unsigned char[512 * 512 * 3];
@@ -180,6 +181,7 @@ void VolumeReader::CreateDeviceVolume(cudaVolume* volume)
     cudaBBox bbox = cudaBBox(vmin, vmax);
 
     volume->Set(bbox, spacing, volumeTex);
+    volume->SetInvMaxMagnitude(1.f / maxMagnitude);
 }
 
 glm::vec3 VolumeReader::GetVolumeSize()

@@ -246,10 +246,13 @@ __global__ void kernel_pathtracer(const RenderParams renderParams, uint32_t hash
         glm::vec3 wi;
         float pdf = 0.f;
         ShadingType st;
-        if(vs.gradientMagnitude < 1e-3)
-            st = SHANDING_TYPE_ISOTROPIC;
-        else
+
+        auto gradientFactor = volume.GetGradientFactor();
+        auto Pbrdf = vs.color_opacity.a * (1.f - expf(-25.f * gradientFactor * gradientFactor * gradientFactor * vs.gradientMagnitude * 65535.f * volume.GetInvMaxMagnitude()));
+        if(curand_uniform(&rng) < Pbrdf)
             st = SHANDING_TYPE_BRDF;
+        else
+            st = SHANDING_TYPE_ISOTROPIC;
 
         L += T * estimate_direct_light(vs, rng, st);
 
@@ -258,9 +261,9 @@ __global__ void kernel_pathtracer(const RenderParams renderParams, uint32_t hash
         if(fmaxf(f.x, fmaxf(f.y, f.z)) > 0.f && pdf > 0.f)
         {
             if(st == SHANDING_TYPE_ISOTROPIC)
-                T *= f / pdf;
+                T *= f / (pdf * (1.f - Pbrdf));
             else
-                T *= f * cosTerm / pdf;
+                T *= f * cosTerm / (pdf * Pbrdf);
         }
 
         ray.orig = vs.ptInWorld;

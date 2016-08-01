@@ -75,6 +75,14 @@ public:
         return 1.f / bbox.invSize;
     }
 
+    __host__ __device__ void SetInvMaxMagnitude(float invMag) {invMaxMagnitude = invMag;}
+
+    __host__ __device__ float GetInvMaxMagnitude() const {return invMaxMagnitude;}
+
+    __host__ __device__ void SetGradientFactor(float g) {gradientFactor = g;}
+
+    __host__ __device__ float GetGradientFactor() const {return gradientFactor;}
+
 private:
     __device__ glm::vec3 GetNormalizedTexCoord(const glm::vec3& pointInWorld) const
     {
@@ -104,6 +112,8 @@ private:
     cudaBBox bbox;
     cudaTextureObject_t tex;
     float densityScale;
+    float invMaxMagnitude;
+    float gradientFactor;
     glm::vec3 spacing;
     glm::vec3 invSpacing;
     glm::vec2 x_clip;

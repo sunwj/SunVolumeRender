@@ -14,6 +14,8 @@ Canvas::Canvas(const QGLFormat &format, QWidget *parent) : QGLWidget(format, par
     // render params
     renderParams.SetupHDRBuffer(WIDTH, HEIGHT);
     renderParams.traceDepth = 1;
+
+    deviceVolume.SetGradientFactor(0.5f);
 }
 
 Canvas::~Canvas()

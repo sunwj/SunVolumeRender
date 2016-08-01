@@ -60,6 +60,13 @@ public:
         ReStartRender();
     }
 
+    void SetGradientFactor(double g)
+    {
+        deviceVolume.SetGradientFactor(g);
+        setup_volume(deviceVolume);
+        ReStartRender();
+    }
+
     void SetScatterTimes(double val)
     {
         renderParams.traceDepth = val;

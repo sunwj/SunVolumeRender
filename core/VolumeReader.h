@@ -47,6 +47,7 @@ private:
     glm::vec3 spacing = glm::vec3(glm::uninitialize);
     glm::ivec3 dim = glm::ivec3(glm::uninitialize);
     char* volumeData = nullptr;
+    float maxMagnitude = 0.f;
 
     cudaArray* volumeArray = nullptr;
     cudaTextureObject_t volumeTex = 0;

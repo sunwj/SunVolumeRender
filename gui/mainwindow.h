@@ -44,6 +44,7 @@ private slots:
     void onTransferFunctionChanged();
     void onDensityScaleChanged(double s);
     void onScatterTimesChanged(double val);
+    void onGradientFactorChanged(double g);
 
     void onEnvLightUOffsetChanged(double u);
     void onEnvLightVOffsetChanged(double v);

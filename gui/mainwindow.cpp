@@ -74,6 +74,7 @@ void MainWindow::ConfigureTransferFunction()
     connect(tf, SIGNAL(Changed()), this, SLOT(onTransferFunctionChanged()));
 
     connect(ui->SliderWidget_DensityScale, SIGNAL(valueChanged(double)), this, SLOT(onDensityScaleChanged(double)));
+    connect(ui->SliderWidget_GradientFactor, SIGNAL(valueChanged(double)), this, SLOT(onGradientFactorChanged(double)));
 }
 
 void MainWindow::onTransferFunctionChanged()
@@ -471,4 +472,9 @@ void MainWindow::onZClipChanged(double min, double max)
 void MainWindow::onDensityScaleChanged(double s)
 {
     canvas->SetDensityScale(s);
+}
+
+void MainWindow::onGradientFactorChanged(double g)
+{
+    canvas->SetGradientFactor(g);
 }
