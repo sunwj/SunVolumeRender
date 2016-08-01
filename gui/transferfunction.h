@@ -31,6 +31,7 @@ class TransferFunction : public QObject
 {
     Q_OBJECT
 public:
+    TransferFunction() {}
     explicit TransferFunction(vtkSmartPointer<vtkPiecewiseFunction> otf, vtkSmartPointer<vtkColorTransferFunction> ctf, QObject *parent = 0);
     ~TransferFunction();
 
@@ -38,6 +39,7 @@ public:
     float GetMaxOpacityValue() {return maxOpacity;}
     void SaveCurrentTFConfiguration();
     void LoadExistingTFConfiguration();
+    void SetTFConfiguration(uint32_t n, float* index, float* rgb, float* alpha);
 
 signals:
     void Changed();

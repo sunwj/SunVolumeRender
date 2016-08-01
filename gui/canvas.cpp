@@ -69,7 +69,7 @@ void Canvas::paintGL()
 
     if(renderMode == RENDER_MODE_RAYCASTING)
     {
-        glEnable(GL_BLEND);
+        /*glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         glBegin(GL_QUADS);
@@ -84,7 +84,7 @@ void Canvas::paintGL()
 
         glColor4f(0.9490f, 0.9647f, 0.9803f, 1.f);
         glVertex2f(1.f, -1.f);
-        glEnd();
+        glEnd();*/
 
         render_raycasting(img, deviceVolume, transferFunction, camera, volumeReader.GetElementBoundingSphereRadius());
     }

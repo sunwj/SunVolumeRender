@@ -142,6 +142,7 @@ public:
     {
         this->exposure = exposure;
         UpdateCamera();
+        ReStartRender();
     }
 
     // clip plane

@@ -168,7 +168,7 @@ __inline__ __device__ glm::vec3 sample_bsdf(const VolumeSample& vs, glm::vec3* w
     return glm::vec3(0.f);
 }
 
-__inline__ __device__ glm::vec3 estimate_direct_light(const VolumeSample vs, curandState& rng, ShadingType st)
+__inline__ __device__ glm::vec3 estimate_direct_light(const VolumeSample& vs, curandState& rng, ShadingType st)
 {
     glm::vec3 Li = glm::vec3(0.f);
 

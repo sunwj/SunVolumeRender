@@ -176,3 +176,35 @@ void TransferFunction::onColorTFChanged()
     //signal changed
     Changed();
 }
+
+void TransferFunction::SetTFConfiguration(uint32_t n, float *index, float *rgb, float *alpha)
+{
+    opacityTF->RemoveAllPoints();
+    colorTF->RemoveAllPoints();
+
+    for(auto i = 0; i < n; ++i)
+    {
+        opacityTF->AddPoint(index[i], alpha[i]);
+        colorTF->AddRGBPoint(index[i], rgb[i * 3], rgb[i * 3 + 1], rgb[i * 3 + 2]);
+    }
+
+    if(compositeTex)
+    {
+        checkCudaErrors(cudaDestroyTextureObject(compositeTex));
+        compositeTex = 0;
+    }
+
+    opacityTF->GetTable(0.0, 1.0, TABLE_SIZE, opacityTable);
+    colorTF->GetTable(0.0, 1.0, TABLE_SIZE, colorTable);
+    size_t j = 0, k = 0;
+    for(size_t i = 0; i < TABLE_SIZE; ++i)
+    {
+        compositeTable[j++] = colorTable[k++];
+        compositeTable[j++] = colorTable[k++];
+        compositeTable[j++] = colorTable[k++];
+        compositeTable[j++] = opacityTable[i];
+    }
+
+    checkCudaErrors(cudaMemcpyToArray(array, 0, 0, compositeTable, sizeof(float) * TABLE_SIZE * 4, cudaMemcpyHostToDevice));
+    checkCudaErrors(cudaCreateTextureObject(&compositeTex, &resourceDesc, &texDesc, NULL));
+}
