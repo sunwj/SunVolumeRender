@@ -3,6 +3,7 @@
 //
 
 #include "canvas.h"
+#include "utils/stb_image_write.h"
 
 Canvas::Canvas(const QGLFormat &format, QWidget *parent) : QGLWidget(format, parent)
 {
@@ -93,6 +94,14 @@ void Canvas::paintGL()
     else
     {
         render_pathtracer(img, renderParams);
+        if(renderParams.frameNo == 0)
+        {
+            char* data = new char[WIDTH * HEIGHT * 4];
+            cudaMemcpy(data, img, sizeof(glm::u8vec4) * WIDTH * HEIGHT, cudaMemcpyDeviceToHost);
+
+            stbi_write_tga("0.tga", WIDTH, HEIGHT, 4, data);
+            delete []data;
+        }
     }
     checkCudaErrors(cudaDeviceSynchronize());
 
@@ -109,6 +118,7 @@ void Canvas::paintGL()
 
 void Canvas::mousePressEvent(QMouseEvent *e)
 {
+    this->setFocus();
     if((e->buttons() & Qt::LeftButton) || (e->buttons() & Qt::MidButton))
     {
         mouseStartPoint = PixelPosToViewPos(e->posF());
@@ -184,4 +194,33 @@ void Canvas::ZoomToExtent()
     auto maxSpan = fmaxf(extent.x, fmaxf(extent.y, extent.z));
     maxSpan *= 1.5f;       // enlarge it slightly
     eyeDist = maxSpan / (2 * tan(glm::radians(fov * 0.5f)));
+}
+void Canvas::keyPressEvent(QKeyEvent *e)
+{
+    if(e->key() == Qt::Key_Down)
+    {
+        viewMat = glm::rotate(viewMat, static_cast<float>(glm::radians(180.f)), glm::vec3(0.f, 1.f, 0.f));
+
+        UpdateCamera();
+        updateGL();
+        ReStartRender();
+    }
+    else if(e->key() == Qt::Key_Left)
+    {
+        viewMat = glm::rotate(viewMat, static_cast<float>(glm::radians(90.f)), glm::vec3(0.f, 1.f, 0.f));
+
+        UpdateCamera();
+        updateGL();
+        ReStartRender();
+    }
+    else if(e->key() == Qt::Key_Right)
+    {
+        viewMat = glm::rotate(viewMat, static_cast<float>(glm::radians(-90.f)), glm::vec3(0.f, 1.f, 0.f));
+
+        UpdateCamera();
+        updateGL();
+        ReStartRender();
+    }
+
+    QWidget::keyPressEvent(e);
 }

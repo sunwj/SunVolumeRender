@@ -191,6 +191,8 @@ protected:
     void mouseMoveEvent(QMouseEvent* e);
     void wheelEvent(QWheelEvent* e);
 
+    void keyPressEvent(QKeyEvent *e);
+
     // timer
     void timerEvent(QTimerEvent* e) {this->update();}
 

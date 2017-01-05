@@ -75,6 +75,9 @@ void MainWindow::ConfigureTransferFunction()
 
     connect(ui->SliderWidget_DensityScale, SIGNAL(valueChanged(double)), this, SLOT(onDensityScaleChanged(double)));
     connect(ui->SliderWidget_GradientFactor, SIGNAL(valueChanged(double)), this, SLOT(onGradientFactorChanged(double)));
+
+    connect(ui->pushButton_saveTF, SIGNAL(clicked()), this, SLOT(onSaveTF()));
+    connect(ui->pushButton_loadTF, SIGNAL(clicked()), this, SLOT(onLoadTF()));
 }
 
 void MainWindow::onTransferFunctionChanged()
@@ -477,4 +480,22 @@ void MainWindow::onDensityScaleChanged(double s)
 void MainWindow::onGradientFactorChanged(double g)
 {
     canvas->SetGradientFactor(g);
+}
+
+void MainWindow::onSaveTF()
+{
+    //QString filename = QFileDialog::getSaveFileName(this, tr("Save TF"), "", tr("TF file (*.tf)"));
+    //if(!filename.isNull())
+    //{
+        tf->SaveCurrentTFConfiguration();
+    //}
+}
+
+void MainWindow::onLoadTF()
+{
+    //QString filename = QFileDialog::getOpenFileName(this, tr("Load TF"), "", tr("TF file (*.tf)"));
+    //if(!filename.isNull())
+    //{
+        tf->LoadExistingTFConfiguration();
+    //}
 }

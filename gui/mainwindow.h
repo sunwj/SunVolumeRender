@@ -75,6 +75,9 @@ private slots:
     void onYClipChanged(double min, double max);
     void onZClipChanged(double min, double max);
 
+    void onSaveTF();
+    void onLoadTF();
+
 
 private:
     Ui::MainWindow *ui;

@@ -8,7 +8,7 @@
 #include "VolumeReader.h"
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "utils/std_image_write.h"
+#include "utils/stb_image_write.h"
 
 void VolumeReader::Read(std::string filename)
 {
